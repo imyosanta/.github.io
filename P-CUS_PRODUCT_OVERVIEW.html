@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshGuard - 商品概况总览</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#059669',
+                        accent: '#F59E0B',
+                        success: '#34D399',
+                        warning: '#FBBF24',
+                        danger: '#EF4444',
+                        light: 'rgba(255, 255, 255, 0.7)',
+                        dark: 'rgba(15, 23, 42, 0.8)'
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 25%, #f0fdf4 50%, #ecfdf5 75%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-card-active {
+            background: rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-warning {
+            background: rgba(245, 158, 11, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-danger {
+            background: rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        /* 自定义滚动条 */
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+        }
+        
+        /* 商品卡片样式 */
+        .product-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .product-card:active {
+            transform: scale(0.98);
+        }
+        
+        /* 筛选标签样式 */
+        .filter-tag {
+            transition: all 0.3s ease;
+        }
+        
+        .filter-tag.active {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #10B981;
+            border-color: #10B981;
+        }
+        
+        /* 筛选栏滑动样式 */
+        .filter-scroll {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        .filter-scroll::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <!-- 主容器 -->
+    <div id="app-container" class="pb-16 min-h-screen">
+        <!-- 合并的顶部区域 -->
+        <header id="top-header" class="glass fixed top-0 left-0 right-0 z-50 px-4 py-3">
+            <!-- iOS状态栏 -->
+            <div id="ios-status-bar" class="h-7 flex justify-between items-center px-4 mb-3">
+                <div id="time" class="text-xs font-semibold text-gray-800">9:41</div>
+                <div id="status-icons" class="flex items-center space-x-1">
+                    <i class="fas fa-signal text-xs text-gray-800"></i>
+                    <i class="fas fa-wifi text-xs text-gray-800"></i>
+                    <i class="fas fa-battery-three-quarters text-xs text-gray-800"></i>
+                </div>
+            </div>
+            <!-- 导航栏内容 -->
+            <div id="nav-content" class="flex justify-between items-center">
+            <div id="store-info" class="flex items-center">
+                <div id="store-logo" class="w-10 h-10 rounded-full overflow-hidden border-2 border-white">
+                    <img src="https://i.pinimg.com/736x/18/29/70/182970e70b89f8de7bc04f73b0e9951b.jpg" alt="超市标志" data-category="商业">
+                </div>
+                <div id="store-details" class="ml-2">
+                    <h2 id="store-name" class="text-sm font-semibold text-gray-800">鲜果超市</h2>
+                    <p id="store-location" class="text-xs text-gray-600">距您 0.5 公里</p>
+                </div>
+            </div>
+            <div id="header-actions" class="flex items-center space-x-3">
+                <button id="scan-btn" class="p-2 rounded-full glass">
+                    <i class="fas fa-qrcode text-gray-800"></i>
+                </button>
+                <button id="notification-btn" class="relative p-2 rounded-full glass">
+                    <i class="fas fa-bell text-gray-800"></i>
+                    <span id="notification-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full flex items-center justify-center text-[10px] text-white font-bold">2</span>
+                </button>
+            </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main id="main-content" class="pt-32 px-4 pb-24 overflow-y-auto custom-scrollbar">
+            <!-- 搜索栏 -->
+            <section id="search-section" class="mb-6">
+                <div id="search-container" class="glass-card flex items-center p-3 mb-4">
+                    <i class="fas fa-search text-gray-500 mr-3"></i>
+                    <input id="search-input" type="text" placeholder="搜索商品名称、编码或条形码" class="bg-transparent border-none outline-none flex-1 text-sm">
+                </div>
+            </section>
+
+            <!-- 筛选器 -->
+            <section id="filter-section" class="mb-6">
+                <div id="category-filter" class="mb-4 flex gap-2 overflow-x-auto whitespace-nowrap filter-scroll">
+                    <button id="filter-all" class="filter-tag active mr-2 px-4 py-2 text-xs rounded-full glass-card-active">
+                        全部
+                    </button>
+                    <button id="filter-vegetables" class="filter-tag mr-2 px-4 py-2 text-xs rounded-full bg-white border border-gray-200">
+                        蔬菜
+                    </button>
+                    <button id="filter-fruits" class="filter-tag mr-2 px-4 py-2 text-xs rounded-full bg-white border border-gray-200">
+                        水果
+                    </button>
+                    <button id="filter-meat" class="filter-tag mr-2 px-4 py-2 text-xs rounded-full bg-white border border-gray-200">
+                        肉类
+                    </button>
+                    <button id="filter-seafood" class="filter-tag mr-2 px-4 py-2 text-xs rounded-full bg-white border border-gray-200">
+                        海鲜
+                    </button>
+                    <button id="filter-dairy" class="filter-tag mr-2 px-4 py-2 text-xs rounded-full bg-white border border-gray-200">
+                        乳制品
+                    </button>
+                </div>
+                
+                <div id="status-filter" class="mb-4 overflow-x-auto whitespace-nowrap filter-scroll">
+                    <button id="filter-status-all" class="filter-tag active mr-2 px-4 py-2 text-xs rounded-full glass-card-active">
+                        全部状态
+                    </button>
+                    <button id="filter-status-fresh" class="filter-tag mr-2 px-4 py-2 text-xs rounded-full bg-white border border-gray-200">
+                        新鲜
+                    </button>
+                    <button id="filter-status-expiring" class="filter-tag mr-2 px-4 py-2 text-xs rounded-full bg-white border border-gray-200">
+                        临期
+                    </button>
+                </div>
+                
+                <div id="promotion-filter" class="mb-4 overflow-x-auto whitespace-nowrap filter-scroll">
+                    <button id="filter-promotion-all" class="filter-tag active mr-2 px-4 py-2 text-xs rounded-full glass-card-active">
+                        全部优惠
+                    </button>
+                    <button id="filter-promotion-discount" class="filter-tag mr-2 px-4 py-2 text-xs rounded-full bg-white border border-gray-200">
+                        限时折扣
+                    </button>
+                    <button id="filter-promotion-clearance" class="filter-tag mr-2 px-4 py-2 text-xs rounded-full bg-white border border-gray-200">
+                        临期特价
+                    </button>
+                </div>
+            </section>
+
+            <!-- 商品列表 -->
+            <section id="product-list-section">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="product-list-title" class="text-lg font-bold text-gray-800">商品列表</h2>
+                    <div id="sort-options" class="flex items-center text-xs text-gray-600">
+                        <span id="sort-label">排序:</span>
+                        <select id="sort-select" class="bg-transparent border-none outline-none ml-1">
+                            <option value="freshness">新鲜度优先</option>
+                            <option value="price-low">价格从低到高</option>
+                            <option value="price-high">价格从高到低</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="product-grid" class="grid grid-cols-2 gap-4">
+                    <!-- 商品卡片1 - 新鲜 -->
+                    <div id="product-1" class="product-card glass-card p-3 rounded-2xl">
+                        <div class="relative mb-2">
+                            <img src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&h=400&fit=crop&crop=center?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="有机草莓" data-category="食品" class="w-full h-32 object-cover rounded-xl">
+                            <span id="product-1-status" class="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium bg-success/80 text-white rounded-full">新鲜</span>
+                        </div>
+                        <h3 id="product-1-name" class="text-sm font-semibold text-gray-800 mb-1">有机草莓</h3>
+                        <div class="flex justify-between items-center">
+                            <p id="product-1-price" class="text-sm font-bold text-gray-800">¥15.8<span class="text-xs font-normal text-gray-600">/盒</span></p>
+                            <div id="product-1-freshness" class="flex items-center">
+                                <div class="status-indicator bg-success mr-1"></div>
+                                <span class="text-xs text-gray-600">98%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 商品卡片2 - 临期折扣 -->
+                    <div id="product-2" class="product-card glass-card-warning p-3 rounded-2xl">
+                        <div class="relative mb-2">
+                            <img src="https://i.pinimg.com/736x/e4/5d/2e/e45d2e41c17cbe4d1ab93f595fcec3be.jpg?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="牛油果" data-category="食品" class="w-full h-32 object-cover rounded-xl">
+                            <span id="product-2-status" class="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium bg-warning/80 text-white rounded-full">临期</span>
+                            <span id="product-2-discount" class="absolute bottom-2 left-2 px-2 py-1 text-[10px] font-medium bg-danger/80 text-white rounded-full">7折</span>
+                        </div>
+                        <h3 id="product-2-name" class="text-sm font-semibold text-gray-800 mb-1">进口牛油果</h3>
+                        <div class="flex justify-between items-center">
+                            <div id="product-2-price-container">
+                                <p id="product-2-price" class="text-sm font-bold text-gray-800">¥12.5<span class="text-xs font-normal text-gray-600">/个</span></p>
+                                <p id="product-2-original-price" class="text-xs line-through text-gray-500">¥17.9</p>
+                            </div>
+                            <div id="product-2-freshness" class="flex items-center">
+                                <div class="status-indicator bg-warning mr-1"></div>
+                                <span class="text-xs text-gray-600">75%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 商品卡片3 - 新鲜 -->
+                    <div id="product-3" class="product-card glass-card p-3 rounded-2xl">
+                        <div class="relative mb-2">
+                            <img src="https://images.unsplash.com/photo-1603048297172-c92544798d5a?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="新鲜猪肉" data-category="食品" class="w-full h-32 object-cover rounded-xl">
+                            <span id="product-3-status" class="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium bg-success/80 text-white rounded-full">新鲜</span>
+                        </div>
+                        <h3 id="product-3-name" class="text-sm font-semibold text-gray-800 mb-1">精选猪肉</h3>
+                        <div class="flex justify-between items-center">
+                            <p id="product-3-price" class="text-sm font-bold text-gray-800">¥28.9<span class="text-xs font-normal text-gray-600">/500g</span></p>
+                            <div id="product-3-freshness" class="flex items-center">
+                                <div class="status-indicator bg-success mr-1"></div>
+                                <span class="text-xs text-gray-600">95%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 商品卡片4 - 新鲜 -->
+                    <div id="product-4" class="product-card glass-card p-3 rounded-2xl">
+                        <div class="relative mb-2">
+                            <img src="https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="有机胡萝卜" data-category="食品" class="w-full h-32 object-cover rounded-xl">
+                            <span id="product-4-status" class="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium bg-success/80 text-white rounded-full">新鲜</span>
+                        </div>
+                        <h3 id="product-4-name" class="text-sm font-semibold text-gray-800 mb-1">有机胡萝卜</h3>
+                        <div class="flex justify-between items-center">
+                            <p id="product-4-price" class="text-sm font-bold text-gray-800">¥5.9<span class="text-xs font-normal text-gray-600">/500g</span></p>
+                            <div id="product-4-freshness" class="flex items-center">
+                                <div class="status-indicator bg-success mr-1"></div>
+                                <span class="text-xs text-gray-600">97%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 商品卡片5 - 临期折扣 -->
+                    <div id="product-5" class="product-card glass-card-warning p-3 rounded-2xl">
+                        <div class="relative mb-2">
+                            <img src="https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="新鲜三文鱼" data-category="食品" class="w-full h-32 object-cover rounded-xl">
+                            <span id="product-5-status" class="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium bg-warning/80 text-white rounded-full">临期</span>
+                            <span id="product-5-discount" class="absolute bottom-2 left-2 px-2 py-1 text-[10px] font-medium bg-danger/80 text-white rounded-full">8折</span>
+                        </div>
+                        <h3 id="product-5-name" class="text-sm font-semibold text-gray-800 mb-1">挪威三文鱼</h3>
+                        <div class="flex justify-between items-center">
+                            <div id="product-5-price-container">
+                                <p id="product-5-price" class="text-sm font-bold text-gray-800">¥48.0<span class="text-xs font-normal text-gray-600">/300g</span></p>
+                                <p id="product-5-original-price" class="text-xs line-through text-gray-500">¥60.0</p>
+                            </div>
+                            <div id="product-5-freshness" class="flex items-center">
+                                <div class="status-indicator bg-warning mr-1"></div>
+                                <span class="text-xs text-gray-600">80%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 商品卡片6 - 新鲜 -->
+                    <div id="product-6" class="product-card glass-card p-3 rounded-2xl">
+                        <div class="relative mb-2">
+                            <img src="https://images.unsplash.com/photo-1550583724-b2692b85b150?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="新鲜牛奶" data-category="食品" class="w-full h-32 object-cover rounded-xl">
+                            <span id="product-6-status" class="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium bg-success/80 text-white rounded-full">新鲜</span>
+                        </div>
+                        <h3 id="product-6-name" class="text-sm font-semibold text-gray-800 mb-1">有机纯牛奶</h3>
+                        <div class="flex justify-between items-center">
+                            <p id="product-6-price" class="text-sm font-bold text-gray-800">¥8.5<span class="text-xs font-normal text-gray-600">/瓶</span></p>
+                            <div id="product-6-freshness" class="flex items-center">
+                                <div class="status-indicator bg-success mr-1"></div>
+                                <span class="text-xs text-gray-600">99%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 加载更多按钮 -->
+                <div id="load-more-container" class="mt-6 flex justify-center">
+                    <button id="load-more-btn" class="glass-card px-6 py-2 text-sm text-gray-700 rounded-full flex items-center">
+                        <span>加载更多</span>
+                        <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部导航栏 -->
+        <nav id="bottom-nav" class="fixed bottom-4 left-4 right-4 z-40">
+            <div class="glass rounded-full shadow-glass px-0.5 py-0.5 flex justify-center items-center max-w-[280px] mx-auto space-x-1">
+                <a id="nav-home" href="P-CUS_PRODUCT_OVERVIEW.html" class="flex items-center justify-center p-3">
+                    <div class="w-12 h-12 rounded-xl bg-primary/30 flex items-center justify-center">
+                        <i class="fas fa-home text-primary text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-shopping-list" href="P-CUS_SHOPPING_LIST.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-shopping-cart text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-discount" href="P-CUS_DISCOUNT.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-tag text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-user" href="P-CUS_USER_CENTER.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-user text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 时间显示
+            function updateTime() {
+                const now = new Date();
+                let hours = now.getHours();
+                let minutes = now.getMinutes();
+                minutes = minutes < 10 ? '0' + minutes : minutes;
+                document.querySelector('#time').textContent = `${hours}:${minutes}`;
+            }
+            updateTime();
+            setInterval(updateTime, 60000);
+            
+            // 搜索功能
+            document.querySelector('#search-input').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    const searchTerm = this.value.trim();
+                    console.log('搜索商品:', searchTerm);
+                    // 实际应用中这里会调用搜索API
+                }
+            });
+            
+            // 筛选器点击事件
+            const categoryFilters = document.querySelectorAll('#category-filter .filter-tag');
+            categoryFilters.forEach(filter => {
+                filter.addEventListener('click', function() {
+                    categoryFilters.forEach(f => f.classList.remove('active', 'glass-card-active'));
+                    categoryFilters.forEach(f => f.classList.add('bg-white', 'border', 'border-gray-200'));
+                    this.classList.remove('glass-card');
+                    this.classList.add('active', 'glass-card-active');
+                    
+                    const category = this.id.replace('filter-', '');
+                    console.log('筛选商品类别:', category);
+                    // 实际应用中这里会根据类别筛选商品
+                });
+            });
+            
+            const statusFilters = document.querySelectorAll('#status-filter .filter-tag');
+            statusFilters.forEach(filter => {
+                filter.addEventListener('click', function() {
+                    statusFilters.forEach(f => f.classList.remove('active', 'glass-card-active'));
+                    statusFilters.forEach(f => f.classList.add('bg-white', 'border', 'border-gray-200'));
+                    this.classList.remove('glass-card');
+                    this.classList.add('active', 'glass-card-active');
+                    
+                    const status = this.id.replace('filter-status-', '');
+                    console.log('筛选新鲜度状态:', status);
+                    // 实际应用中这里会根据新鲜度状态筛选商品
+                });
+            });
+            
+            const promotionFilters = document.querySelectorAll('#promotion-filter .filter-tag');
+            promotionFilters.forEach(filter => {
+                filter.addEventListener('click', function() {
+                    promotionFilters.forEach(f => f.classList.remove('active', 'glass-card-active'));
+                    promotionFilters.forEach(f => f.classList.add('bg-white', 'border', 'border-gray-200'));
+                    this.classList.remove('glass-card');
+                    this.classList.add('active', 'glass-card-active');
+                    
+                    const promotion = this.id.replace('filter-promotion-', '');
+                    console.log('筛选促销活动:', promotion);
+                    // 实际应用中这里会根据促销活动筛选商品
+                });
+            });
+            
+            // 排序选择
+            document.querySelector('#sort-select').addEventListener('change', function() {
+                const sortBy = this.value;
+                console.log('排序方式:', sortBy);
+                // 实际应用中这里会根据选择的排序方式重新排序商品
+            });
+            
+            // 商品卡片点击事件
+            const productCards = document.querySelectorAll('.product-card');
+            productCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const productId = this.id.replace('product-', '');
+                    window.location.href = `P-CUS_PRODUCT_DETAIL.html?productId=${productId}`;
+                });
+            });
+            
+            // 加载更多按钮点击事件
+            document.querySelector('#load-more-btn').addEventListener('click', function() {
+                console.log('加载更多商品');
+                // 实际应用中这里会加载更多商品
+            });
+            
+            // 扫码按钮点击事件
+            document.querySelector('#scan-btn').addEventListener('click', function() {
+                window.location.href = 'P-CUS_SCAN.html';
+            });
+            
+            // 底部导航栏点击事件
+            document.querySelector('#nav-home').addEventListener('click', function(e) {
+                e.preventDefault();
+                // 已在商品概况总览页，无需操作
+            });
+            
+            document.querySelector('#nav-shopping-list').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-CUS_SHOPPING_LIST.html';
+            });
+            
+            document.querySelector('#nav-discount').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-CUS_DISCOUNT.html';
+            });
+            
+            document.querySelector('#nav-user').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-CUS_USER_CENTER.html';
+            });
+        });
+    </script>
+</body>
+</html>

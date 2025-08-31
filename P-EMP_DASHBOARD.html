@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshGuard - 概况监控</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#059669',
+                        accent: '#F59E0B',
+                        success: '#34D399',
+                        warning: '#FBBF24',
+                        danger: '#EF4444',
+                        light: 'rgba(255, 255, 255, 0.7)',
+                        dark: 'rgba(15, 23, 42, 0.8)'
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 25%, #f0fdf4 50%, #ecfdf5 75%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-card-active {
+            background: rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-warning {
+            background: rgba(245, 158, 11, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-danger {
+            background: rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        /* 增强玻璃拟态效果 */
+        .glass-card-active {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card-active:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-warning {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(245, 158, 11, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-danger {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(239, 68, 68, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        /* 自定义滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <!-- 主容器 -->
+    <div id="app-container" class="pb-16 min-h-screen">
+        <!-- 合并的顶部区域 -->
+        <header id="top-header" class="glass fixed top-0 left-0 right-0 z-50 px-4 py-3">
+            <!-- iOS状态栏 -->
+            <div id="ios-status-bar" class="h-7 flex justify-between items-center px-4">
+                <div id="time" class="text-xs font-semibold text-gray-800">9:41</div>
+                <div id="status-icons" class="flex items-center space-x-1">
+                    <i class="fas fa-signal text-xs text-gray-800"></i>
+                    <i class="fas fa-wifi text-xs text-gray-800"></i>
+                    <i class="fas fa-battery-three-quarters text-xs text-gray-800"></i>
+                </div>
+            </div>
+            <!-- 导航栏 -->
+            <div id="top-nav" class=" py-3 flex justify-between items-center">
+            <div id="user-profile" class="glass-card p-3 rounded-2xl cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105">
+                <div class="flex items-center">
+                    <div id="user-avatar" class="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white/50">
+                        <img src="https://i.pinimg.com/736x/41/e0/39/41e0398984b0f1a0c79acfb0694bfcce.jpg" alt="用户头像" data-category="人物" class="w-full h-full object-cover">
+                    </div>
+                    <div id="user-info" class="ml-3">
+                        <h2 id="user-name" class="text-sm font-semibold text-gray-800">李明</h2>
+                        <p id="user-role" class="text-xs text-gray-600">生鲜部理货员</p>
+                    </div>
+                    <div class="ml-2">
+                        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+            <div id="header-actions" class="flex items-center space-x-3">
+                <button id="notification-btn" class="relative p-2 rounded-full glass">
+                    <i class="fas fa-bell text-gray-800"></i>
+                    <span id="notification-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full flex items-center justify-center text-[10px] text-white font-bold">3</span>
+                </button>
+                <button id="settings-btn" class="p-2 rounded-full glass">
+                    <i class="fas fa-cog text-gray-800"></i>
+                </button>
+            </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main id="main-content" class="pt-36 px-4 pb-24 overflow-y-auto custom-scrollbar">
+            <!-- 新鲜度状态概览区 -->
+            <section id="freshness-overview" class="mb-6">
+                <h2 id="overview-title" class="text-lg font-bold text-gray-800 mb-3">新鲜度状态概览</h2>
+                <div id="freshness-cards" class="grid grid-cols-3 gap-4">
+                    <div id="fresh-card" class="glass-card-active p-5 flex flex-col items-center rounded-2xl cursor-pointer">
+                        <div id="fresh-icon" class="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center mb-2">
+                            <i class="fas fa-check text-primary"></i>
+                        </div>
+                        <h3 id="fresh-count" class="text-xl font-bold text-gray-800">142</h3>
+                        <p id="fresh-label" class="text-xs text-gray-700">新鲜</p>
+                        <p id="fresh-percentage" class="text-xs text-gray-700 mt-1 font-medium">75%</p>
+                    </div>
+                    
+                    <div id="expiring-card" class="glass-card-warning p-5 flex flex-col items-center rounded-2xl cursor-pointer">
+                        <div id="expiring-icon" class="w-10 h-10 rounded-full bg-accent/30 flex items-center justify-center mb-2">
+                            <i class="fas fa-exclamation text-accent"></i>
+                        </div>
+                        <h3 id="expiring-count" class="text-xl font-bold text-gray-800">36</h3>
+                        <p id="expiring-label" class="text-xs text-gray-700">临期</p>
+                        <p id="expiring-percentage" class="text-xs text-gray-700 mt-1 font-medium">19%</p>
+                    </div>
+                    
+                    <div id="expired-card" class="glass-card-danger p-5 flex flex-col items-center rounded-2xl cursor-pointer">
+                        <div id="expired-icon" class="w-10 h-10 rounded-full bg-danger/30 flex items-center justify-center mb-2">
+                            <i class="fas fa-times text-danger"></i>
+                        </div>
+                        <h3 id="expired-count" class="text-xl font-bold text-gray-800">12</h3>
+                        <p id="expired-label" class="text-xs text-gray-700">已过期</p>
+                        <p id="expired-percentage" class="text-xs text-gray-700 mt-1 font-medium">6%</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 智能提醒通知区 -->
+            <section id="smart-alerts" class="mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 id="alerts-title" class="text-lg font-bold text-gray-800">智能提醒</h2>
+                    <button id="view-all-alerts" class="text-xs text-gray-600">查看全部</button>
+                </div>
+                
+                <div id="alerts-list" class="space-y-3">
+                    <!-- 临期提醒 -->
+                    <div id="alert-expiring" class="glass-card p-4 rounded-2xl">
+                        <div class="flex items-start">
+                            <div id="alert-expiring-icon" class="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="fas fa-clock text-accent"></i>
+                            </div>
+                            <div id="alert-expiring-content" class="flex-1">
+                                <h3 id="alert-expiring-title" class="text-sm font-semibold text-gray-800">临期提醒</h3>
+                                <p id="alert-expiring-desc" class="text-xs text-gray-600 mb-2">有12件水果类商品将在24小时内过期</p>
+                                <div id="alert-expiring-actions" class="flex space-x-2">
+                                    <button id="view-expiring-btn" class="text-xs glass px-4 py-2 rounded-full font-medium text-accent border border-accent/30 backdrop-blur-md">查看商品</button>
+                                    <button id="mark-expiring-btn" class="text-xs glass px-4 py-2 rounded-full font-medium text-gray-700 border border-gray-300/30 backdrop-blur-md">标记已读</button>
+                                </div>
+                            </div>
+                            <span id="alert-expiring-time" class="text-[10px] text-gray-500">10分钟前</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 品质异常 -->
+                    <div id="alert-quality" class="glass-card p-4 rounded-2xl">
+                        <div class="flex items-start">
+                            <div id="alert-quality-icon" class="w-10 h-10 rounded-full bg-danger/20 flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="fas fa-exclamation-triangle text-danger"></i>
+                            </div>
+                            <div id="alert-quality-content" class="flex-1">
+                                <h3 id="alert-quality-title" class="text-sm font-semibold text-gray-800">品质异常</h3>
+                                <p id="alert-quality-desc" class="text-xs text-gray-600 mb-2">3号冷柜温度异常，可能影响肉类商品品质</p>
+                                <div id="alert-quality-actions" class="flex space-x-2">
+                                    <button id="view-quality-btn" class="text-xs glass px-4 py-2 rounded-full font-medium text-danger border border-danger/30 backdrop-blur-md">查看详情</button>
+                                    <button id="mark-quality-btn" class="text-xs glass px-4 py-2 rounded-full font-medium text-gray-700 border border-gray-300/30 backdrop-blur-md">标记已读</button>
+                                </div>
+                            </div>
+                            <span id="alert-quality-time" class="text-[10px] text-gray-500">25分钟前</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 滞销预警 -->
+                    <div id="alert-slow" class="glass-card p-4 rounded-2xl">
+                        <div class="flex items-start">
+                            <div id="alert-slow-icon" class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="fas fa-chart-line text-primary"></i>
+                            </div>
+                            <div id="alert-slow-content" class="flex-1">
+                                <h3 id="alert-slow-title" class="text-sm font-semibold text-gray-800">滞销预警</h3>
+                                <p id="alert-slow-desc" class="text-xs text-gray-600 mb-2">进口牛油果销售缓慢，建议调整价格或位置</p>
+                                <div id="alert-slow-actions" class="flex space-x-2">
+                                    <button id="view-slow-btn" class="text-xs glass px-4 py-2 rounded-full font-medium text-primary border border-primary/30 backdrop-blur-md">查看商品</button>
+                                    <button id="mark-slow-btn" class="text-xs glass px-4 py-2 rounded-full font-medium text-gray-700 border border-gray-300/30 backdrop-blur-md">标记已读</button>
+                                </div>
+                            </div>
+                            <span id="alert-slow-time" class="text-[10px] text-gray-500">1小时前</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 关键指标展示区 -->
+            <section id="key-metrics" class="mb-6">
+                <h2 id="metrics-title" class="text-lg font-bold text-gray-800 mb-3">关键指标</h2>
+                <div id="metrics-cards" class="grid grid-cols-2 gap-4">
+                    <!-- 今日损耗率 -->
+                    <div id="loss-rate-card" class="glass-card p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 id="loss-rate-title" class="text-sm font-semibold text-gray-800">今日损耗率</h3>
+                            <span id="loss-rate-trend" class="text-xs px-2 py-0.5 rounded-full bg-success/20 text-success flex items-center">
+                                <i class="fas fa-arrow-down text-[10px] mr-1"></i>2.1%
+                            </span>
+                        </div>
+                        <div id="loss-rate-value" class="text-2xl font-bold text-gray-800 mb-1">3.2%</div>
+                        <div id="loss-rate-chart" class="h-12 mb-1">
+                            <svg class="w-full h-full" viewBox="0 0 200 48" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="lossRateGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:rgba(52, 211, 153, 0.3);stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:rgba(52, 211, 153, 0);stop-opacity:0" />
+                                    </linearGradient>
+                                </defs>
+                                <polyline fill="none" stroke="rgba(52, 211, 153, 0.8)" stroke-width="2" 
+                                    points="0,35 25,30 50,32 75,28 100,25 125,22 150,20 175,18 200,15"/>
+                                <polyline fill="url(#lossRateGradient)" stroke="none" 
+                                    points="0,35 25,30 50,32 75,28 100,25 125,22 150,20 175,18 200,15 200,48 0,48"/>
+                                <circle cx="200" cy="15" r="2" fill="rgba(52, 211, 153, 1)"/>
+                            </svg>
+                        </div>
+                        <div id="loss-rate-compare" class="text-xs text-gray-600">
+                            较上周 <span class="text-success">↓0.8%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 库存周转天数 -->
+                    <div id="inventory-turnover-card" class="glass-card p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 id="inventory-turnover-title" class="text-sm font-semibold text-gray-800">库存周转天数</h3>
+                            <span id="inventory-turnover-trend" class="text-xs px-2 py-0.5 rounded-full bg-success/20 text-success flex items-center">
+                                <i class="fas fa-arrow-down text-[10px] mr-1"></i>0.3天
+                            </span>
+                        </div>
+                        <div id="inventory-turnover-value" class="text-2xl font-bold text-gray-800 mb-1">2.5天</div>
+                        <div id="inventory-turnover-chart" class="h-12 mb-1">
+                            <svg class="w-full h-full" viewBox="0 0 200 48" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="inventoryTurnoverGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:rgba(16, 185, 129, 0.3);stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:rgba(16, 185, 129, 0);stop-opacity:0" />
+                                    </linearGradient>
+                                </defs>
+                                <polyline fill="none" stroke="rgba(16, 185, 129, 0.8)" stroke-width="2" 
+                                    points="0,40 25,38 50,35 75,33 100,30 125,28 150,25 175,22 200,20"/>
+                                <polyline fill="url(#inventoryTurnoverGradient)" stroke="none" 
+                                    points="0,40 25,38 50,35 75,33 100,30 125,28 150,25 175,22 200,20 200,48 0,48"/>
+                                <circle cx="200" cy="20" r="2" fill="rgba(16, 185, 129, 1)"/>
+                            </svg>
+                        </div>
+                        <div id="inventory-turnover-compare" class="text-xs text-gray-600">
+                            较上月 <span class="text-success">↓0.5天</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 快捷入口区 -->
+            <section id="quick-access">
+                <h2 id="quick-access-title" class="text-lg font-bold text-gray-800 mb-3">快捷入口</h2>
+                <div id="quick-access-grid" class="grid grid-cols-3 gap-4">
+                    <a id="product-management-link" href="#" class="glass-card p-4 flex flex-col items-center">
+                        <div id="product-management-icon" class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-2">
+                            <i class="fas fa-box text-primary text-xl"></i>
+                        </div>
+                        <span id="product-management-label" class="text-xs text-gray-700 text-center">商品管理</span>
+                    </a>
+                    
+                    <a id="map-location-link" href="#" class="glass-card p-4 flex flex-col items-center">
+                        <div id="map-location-icon" class="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mb-2">
+                            <i class="fas fa-map-marker-alt text-accent text-xl"></i>
+                        </div>
+                        <span id="map-location-label" class="text-xs text-gray-700 text-center">地图定位</span>
+                    </a>
+                    
+                    <a id="data-analysis-link" href="#" class="glass-card p-4 flex flex-col items-center">
+                        <div id="data-analysis-icon" class="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center mb-2">
+                            <i class="fas fa-chart-pie text-secondary text-xl"></i>
+                        </div>
+                        <span id="data-analysis-label" class="text-xs text-gray-700 text-center">数据分析</span>
+                    </a>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部导航栏 -->
+        <nav id="bottom-nav" class="fixed bottom-4 left-4 right-4 z-40">
+            <div class="glass rounded-full shadow-glass px-0.5 py-0.5 flex justify-center items-center max-w-[280px] mx-auto space-x-1">
+                <a id="nav-dashboard" href="#" class="flex items-center justify-center p-3">
+                    <div class="w-12 h-12 rounded-xl bg-primary/30 flex items-center justify-center">
+                        <i class="fas fa-home text-primary text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-products" href="#" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-box text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-map" href="#" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-map-marker-alt text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-reports" href="#" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-chart-bar text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 更新时间
+            function updateTime() {
+                const now = new Date();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                document.querySelector('#time').textContent = `${hours}:${minutes}`;
+            }
+            
+            updateTime();
+            setInterval(updateTime, 60000); // 每分钟更新一次
+            
+            // 新鲜度状态卡片点击事件
+            document.querySelector('#fresh-card').addEventListener('click', function() {
+                window.location.href = 'P-EMP_PRODUCT_LIST.html?status=fresh';
+            });
+            
+            document.querySelector('#expiring-card').addEventListener('click', function() {
+                window.location.href = 'P-EMP_PRODUCT_LIST.html?status=expiring';
+            });
+            
+            document.querySelector('#expired-card').addEventListener('click', function() {
+                window.location.href = 'P-EMP_PRODUCT_LIST.html?status=expired';
+            });
+            
+            // 智能提醒点击事件
+            document.querySelector('#view-expiring-btn').addEventListener('click', function() {
+                window.location.href = 'P-EMP_PRODUCT_LIST.html?status=expiring&category=fruit';
+            });
+            
+            document.querySelector('#view-quality-btn').addEventListener('click', function() {
+                window.location.href = 'P-EMP_MAP.html?highlight=coldStorage3';
+            });
+            
+            document.querySelector('#view-slow-btn').addEventListener('click', function() {
+                window.location.href = 'P-EMP_PRODUCT_DETAIL.html?product_id=avocado123';
+            });
+            
+            // 标记已读按钮
+            document.querySelector('#mark-expiring-btn').addEventListener('click', function() {
+                document.querySelector('#alert-expiring').style.opacity = '0.6';
+                const badge = document.querySelector('#notification-badge');
+                badge.textContent = (parseInt(badge.textContent) - 1).toString();
+            });
+            
+            document.querySelector('#mark-quality-btn').addEventListener('click', function() {
+                document.querySelector('#alert-quality').style.opacity = '0.6';
+                const badge = document.querySelector('#notification-badge');
+                badge.textContent = (parseInt(badge.textContent) - 1).toString();
+            });
+            
+            document.querySelector('#mark-slow-btn').addEventListener('click', function() {
+                document.querySelector('#alert-slow').style.opacity = '0.6';
+                const badge = document.querySelector('#notification-badge');
+                badge.textContent = (parseInt(badge.textContent) - 1).toString();
+            });
+            
+            // 快捷入口点击事件
+            document.querySelector('#product-management-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_PRODUCT_LIST.html';
+            });
+            
+            document.querySelector('#map-location-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_MAP.html';
+            });
+            
+            document.querySelector('#data-analysis-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_REPORT.html';
+            });
+            
+            // 底部导航栏点击事件
+            document.querySelector('#nav-dashboard').addEventListener('click', function(e) {
+                e.preventDefault();
+                // 已在当前页面，无需操作
+            });
+            
+            document.querySelector('#nav-products').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_PRODUCT_LIST.html';
+            });
+            
+            document.querySelector('#nav-map').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_MAP.html';
+            });
+            
+            document.querySelector('#nav-reports').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_REPORT.html';
+            });
+            
+            // 查看全部提醒
+            document.querySelector('#view-all-alerts').addEventListener('click', function() {
+                // 在实际应用中，这里可能会跳转到一个专门的提醒列表页面
+                // 但PRD中未明确提及此页面，所以仅做简单处理
+                alert('查看全部提醒功能将在后续版本中实现');
+            });
+            
+            // 顶部导航栏按钮
+            document.querySelector('#notification-btn').addEventListener('click', function() {
+                // 在实际应用中，这里可能会显示通知下拉菜单
+                // 但PRD中未明确提及此功能，所以仅做简单处理
+                alert('通知中心功能将在后续版本中实现');
+            });
+            
+            document.querySelector('#settings-btn').addEventListener('click', function() {
+                // 在实际应用中，这里可能会跳转到设置页面
+                // 但PRD中未明确提及此页面，所以仅做简单处理
+                alert('设置功能将在后续版本中实现');
+            });
+            
+            // 用户头像点击事件 - 弹出账号管理
+            document.querySelector('#user-profile').addEventListener('click', function() {
+                window.location.href = 'P-EMP_ACCOUNT_MANAGEMENT.html';
+            });
+        });
+    </script>
+</body>
+</html>

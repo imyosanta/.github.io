@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshGuard - 地图定位</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#059669',
+                        accent: '#F59E0B',
+                        success: '#34D399',
+                        warning: '#FBBF24',
+                        danger: '#EF4444',
+                        light: 'rgba(255, 255, 255, 0.7)',
+                        dark: 'rgba(15, 23, 42, 0.8)'
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 25%, #f0fdf4 50%, #ecfdf5 75%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-card-active {
+            background: rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-warning {
+            background: rgba(245, 158, 11, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-danger {
+            background: rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        /* 自定义滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+        }
+        
+        /* 地图样式 */
+        .map-container {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .map-grid {
+            background-image: linear-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(16, 185, 129, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .product-marker {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .product-marker:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        
+        .path-line {
+            stroke-dasharray: 5;
+            animation: dash 15s linear infinite;
+        }
+        
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -100;
+            }
+        }
+        
+        /* 任务列表样式 */
+        .task-item-active {
+            border-left: 3px solid #10B981;
+        }
+        
+        /* 路径选择器样式 */
+        .path-selector-option {
+            transition: all 0.3s ease;
+        }
+        
+        .path-selector-option.active {
+            background-color: rgba(16, 185, 129, 0.2);
+            border-color: #10B981;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <!-- 主容器 -->
+    <div id="app-container" class="pb-16 min-h-screen">
+        <!-- 合并的顶部区域 (状态栏 + 导航栏) -->
+        <header id="top-header" class="glass fixed top-0 left-0 right-0 z-50 px-4 py-3">
+            <!-- iOS状态栏 -->
+            <div id="ios-status-bar" class="h-7 flex justify-between items-center px-4">
+                <div id="time" class="text-xs font-semibold text-gray-800">9:41</div>
+                <div id="status-icons" class="flex items-center space-x-1">
+                    <i class="fas fa-signal text-xs text-gray-800"></i>
+                    <i class="fas fa-wifi text-xs text-gray-800"></i>
+                    <i class="fas fa-battery-three-quarters text-xs text-gray-800"></i>
+                </div>
+            </div>
+            <!-- 导航栏 -->
+            <div id="top-nav" class=" py-3 flex justify-between items-center">
+            <div id="user-profile" class="glass-card p-3 rounded-2xl cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105">
+                <div class="flex items-center">
+                    <div id="user-avatar" class="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white/50">
+                        <img src="https://i.pinimg.com/736x/41/e0/39/41e0398984b0f1a0c79acfb0694bfcce.jpg" alt="用户头像" data-category="人物" class="w-full h-full object-cover">
+                    </div>
+                    <div id="user-info" class="ml-3">
+                        <h2 id="user-name" class="text-sm font-semibold text-gray-800">李明</h2>
+                        <p id="user-role" class="text-xs text-gray-600">生鲜部理货员</p>
+                    </div>
+                    <div class="ml-2">
+                        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+            <div id="header-actions" class="flex items-center space-x-3">
+                <button id="notification-btn" class="relative p-2 rounded-full glass">
+                    <i class="fas fa-bell text-gray-800"></i>
+                    <span id="notification-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full flex items-center justify-center text-[10px] text-white font-bold">3</span>
+                </button>
+                <button id="settings-btn" class="p-2 rounded-full glass">
+                    <i class="fas fa-cog text-gray-800"></i>
+                </button>
+            </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main id="main-content" class="pt-40 px-4 pb-24 overflow-y-auto custom-scrollbar">
+            <!-- 地图控制区 -->
+            <section id="map-controls" class="mb-4 flex justify-between items-center">
+                <h2 id="map-title" class="text-lg font-bold text-gray-800">超市地图</h2>
+                <div id="map-filter" class="flex space-x-2">
+                    <button id="filter-all" class="text-xs px-3 py-1 rounded-full glass-card-active">
+                        全部
+                    </button>
+                    <button id="filter-expiring" class="text-xs px-3 py-1 rounded-full glass-card">
+                        临期
+                    </button>
+                    <button id="filter-expired" class="text-xs px-3 py-1 rounded-full glass-card">
+                        已过期
+                    </button>
+                    <button id="filter-low-stock" class="text-xs px-3 py-1 rounded-full glass-card">
+                        库存低
+                    </button>
+                </div>
+            </section>
+
+            <!-- 地图区域 -->
+            <section id="map-section" class="mb-6">
+                <div id="map-container" class="map-container glass-card h-[350px] relative overflow-hidden">
+                    <div id="map-grid" class="map-grid absolute inset-0">
+                        <!-- 货架和区域标识 -->
+                        <div id="shelf-a1" class="absolute top-[50px] left-[50px] w-[80px] h-[30px] bg-gray-200 rounded-md flex items-center justify-center text-xs font-medium">
+                            A1 水果区
+                        </div>
+                        <div id="shelf-a2" class="absolute top-[50px] left-[150px] w-[80px] h-[30px] bg-gray-200 rounded-md flex items-center justify-center text-xs font-medium">
+                            A2 水果区
+                        </div>
+                        <div id="shelf-b1" class="absolute top-[100px] left-[50px] w-[80px] h-[30px] bg-gray-200 rounded-md flex items-center justify-center text-xs font-medium">
+                            B1 蔬菜区
+                        </div>
+                        <div id="shelf-b2" class="absolute top-[100px] left-[150px] w-[80px] h-[30px] bg-gray-200 rounded-md flex items-center justify-center text-xs font-medium">
+                            B2 蔬菜区
+                        </div>
+                        <div id="shelf-c1" class="absolute top-[150px] left-[50px] w-[80px] h-[30px] bg-gray-200 rounded-md flex items-center justify-center text-xs font-medium">
+                            C1 肉类区
+                        </div>
+                        <div id="shelf-c2" class="absolute top-[150px] left-[150px] w-[80px] h-[30px] bg-gray-200 rounded-md flex items-center justify-center text-xs font-medium">
+                            C2 肉类区
+                        </div>
+                        <div id="shelf-d1" class="absolute top-[200px] left-[50px] w-[80px] h-[30px] bg-gray-200 rounded-md flex items-center justify-center text-xs font-medium">
+                            D1 海鲜区
+                        </div>
+                        <div id="shelf-d2" class="absolute top-[200px] left-[150px] w-[80px] h-[30px] bg-gray-200 rounded-md flex items-center justify-center text-xs font-medium">
+                            D2 海鲜区
+                        </div>
+                        <div id="entrance" class="absolute top-[280px] left-[100px] w-[80px] h-[30px] bg-blue-100 rounded-md flex items-center justify-center text-xs font-medium">
+                            入口
+                        </div>
+                        
+                        <!-- 商品标记点 -->
+                        <div id="product-marker-1" class="product-marker" style="top: 65px; left: 70px;">
+                            <div class="w-6 h-6 rounded-full bg-warning flex items-center justify-center" data-product-id="prod001">
+                                <i class="fas fa-exclamation text-white text-xs"></i>
+                            </div>
+                        </div>
+                        <div id="product-marker-2" class="product-marker" style="top: 65px; left: 90px;">
+                            <div class="w-6 h-6 rounded-full bg-danger flex items-center justify-center" data-product-id="prod002">
+                                <i class="fas fa-times text-white text-xs"></i>
+                            </div>
+                        </div>
+                        <div id="product-marker-3" class="product-marker" style="top: 115px; left: 70px;">
+                            <div class="w-6 h-6 rounded-full bg-warning flex items-center justify-center" data-product-id="prod003">
+                                <i class="fas fa-exclamation text-white text-xs"></i>
+                            </div>
+                        </div>
+                        <div id="product-marker-4" class="product-marker" style="top: 165px; left: 170px;">
+                            <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center" data-product-id="prod004">
+                                <i class="fas fa-arrow-down text-white text-xs"></i>
+                            </div>
+                        </div>
+                        <div id="product-marker-5" class="product-marker" style="top: 215px; left: 70px;">
+                            <div class="w-6 h-6 rounded-full bg-danger flex items-center justify-center" data-product-id="prod005">
+                                <i class="fas fa-times text-white text-xs"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- 路径线 -->
+                        <svg id="path-svg" class="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+                            <path id="task-path" class="path-line" d="M100,280 L70,215 L70,165 L70,115 L70,65 L90,65" stroke="#10B981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                            <circle cx="100" cy="280" r="4" fill="#10B981" />
+                            <circle cx="70" cy="215" r="4" fill="#10B981" />
+                            <circle cx="70" cy="165" r="4" fill="#10B981" />
+                            <circle cx="70" cy="115" r="4" fill="#10B981" />
+                            <circle cx="70" cy="65" r="4" fill="#10B981" />
+                            <circle cx="90" cy="65" r="4" fill="#10B981" />
+                        </svg>
+                    </div>
+                    
+                    <!-- 地图缩放控制 -->
+                    <div id="map-zoom-controls" class="absolute bottom-4 right-4 flex flex-col space-y-2">
+                        <button id="zoom-in-btn" class="w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center">
+                            <i class="fas fa-plus text-gray-700"></i>
+                        </button>
+                        <button id="zoom-out-btn" class="w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center">
+                            <i class="fas fa-minus text-gray-700"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- 当前位置指示 -->
+                    <div id="current-location" class="absolute bottom-4 left-4 px-3 py-1 bg-white rounded-full shadow-md flex items-center space-x-1">
+                        <i class="fas fa-map-marker-alt text-primary text-xs"></i>
+                        <span class="text-xs font-medium">当前位置</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 路径选择器 -->
+            <section id="path-selector" class="mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 id="path-selector-title" class="text-lg font-bold text-gray-800">路径展示方式</h2>
+                </div>
+                <div id="path-selector-options" class="flex space-x-4">
+                    <button id="path-map-option" class="path-selector-option active flex-1 glass-card p-3 flex flex-col items-center">
+                        <i class="fas fa-map-marked-alt text-primary text-xl mb-2"></i>
+                        <span class="text-xs font-medium">地图可视化</span>
+                    </button>
+                    <button id="path-list-option" class="path-selector-option flex-1 glass-card p-3 flex flex-col items-center">
+                        <i class="fas fa-list-ul text-gray-600 text-xl mb-2"></i>
+                        <span class="text-xs font-medium">列表步骤</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 任务列表 -->
+            <section id="task-list-section" class="mb-6 hidden">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 id="task-list-title" class="text-lg font-bold text-gray-800">任务步骤</h2>
+                    <span id="task-count" class="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary">5 个步骤</span>
+                </div>
+                <div id="task-list" class="space-y-3">
+                    <div id="task-item-1" class="task-item-active glass-card p-3 pl-4">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center mr-3">
+                                <span class="text-xs text-white font-bold">1</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-semibold">从入口出发</h3>
+                                <p class="text-xs text-gray-600">前往 D1 海鲜区</p>
+                            </div>
+                            <span class="text-xs text-gray-500">10米</span>
+                        </div>
+                    </div>
+                    <div id="task-item-2" class="glass-card p-3 pl-4">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                                <span class="text-xs text-white font-bold">2</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-semibold">处理过期三文鱼</h3>
+                                <p class="text-xs text-gray-600">D1 海鲜区 - 下架</p>
+                            </div>
+                            <span class="text-xs text-gray-500">已过期</span>
+                        </div>
+                    </div>
+                    <div id="task-item-3" class="glass-card p-3 pl-4">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                                <span class="text-xs text-white font-bold">3</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-semibold">前往 C1 肉类区</h3>
+                                <p class="text-xs text-gray-600">沿直线向上</p>
+                            </div>
+                            <span class="text-xs text-gray-500">5米</span>
+                        </div>
+                    </div>
+                    <div id="task-item-4" class="glass-card p-3 pl-4">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                                <span class="text-xs text-white font-bold">4</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-semibold">前往 B1 蔬菜区</h3>
+                                <p class="text-xs text-gray-600">沿直线向上</p>
+                            </div>
+                            <span class="text-xs text-gray-500">5米</span>
+                        </div>
+                    </div>
+                    <div id="task-item-5" class="glass-card p-3 pl-4">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                                <span class="text-xs text-white font-bold">5</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-semibold">处理临期青菜</h3>
+                                <p class="text-xs text-gray-600">B1 蔬菜区 - 打折</p>
+                            </div>
+                            <span class="text-xs text-gray-500">临期</span>
+                        </div>
+                    </div>
+                    <div id="task-item-6" class="glass-card p-3 pl-4">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                                <span class="text-xs text-white font-bold">6</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-semibold">前往 A1 水果区</h3>
+                                <p class="text-xs text-gray-600">沿直线向上</p>
+                            </div>
+                            <span class="text-xs text-gray-500">5米</span>
+                        </div>
+                    </div>
+                    <div id="task-item-7" class="glass-card p-3 pl-4">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                                <span class="text-xs text-white font-bold">7</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-semibold">处理临期苹果</h3>
+                                <p class="text-xs text-gray-600">A1 水果区 - 打折</p>
+                            </div>
+                            <span class="text-xs text-gray-500">临期</span>
+                        </div>
+                    </div>
+                    <div id="task-item-8" class="glass-card p-3 pl-4">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                                <span class="text-xs text-white font-bold">8</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-semibold">处理过期香蕉</h3>
+                                <p class="text-xs text-gray-600">A1 水果区 - 下架</p>
+                            </div>
+                            <span class="text-xs text-gray-500">已过期</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 商品信息卡片 (默认隐藏，点击标记时显示) -->
+            <section id="product-info-card" class="glass-card p-4 mb-6 hidden">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center">
+                        <div id="product-status-indicator" class="w-3 h-3 rounded-full bg-warning mr-2"></div>
+                        <h3 id="product-name" class="text-base font-semibold">有机苹果</h3>
+                    </div>
+                    <button id="close-product-info" class="text-gray-500">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                        <p class="text-xs text-gray-500">位置</p>
+                        <p id="product-location" class="font-medium">A1 水果区</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">状态</p>
+                        <p id="product-status" class="font-medium text-warning">临期</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">入库时间</p>
+                        <p id="product-entry-date" class="font-medium">2023-06-10</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">保质期</p>
+                        <p id="product-shelf-life" class="font-medium">还剩1天</p>
+                    </div>
+                </div>
+                <div class="mt-3 flex space-x-2">
+                    <button id="view-product-detail" class="flex-1 py-2 px-3 bg-primary text-white text-xs font-medium rounded-full">
+                        查看详情
+                    </button>
+                    <button id="add-to-task" class="flex-1 py-2 px-3 bg-gray-200 text-gray-700 text-xs font-medium rounded-full">
+                        添加到任务
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部导航栏 -->
+        <nav id="bottom-nav" class="fixed bottom-4 left-4 right-4 z-40">
+            <div class="glass rounded-full shadow-glass px-0.5 py-0.5 flex justify-center items-center max-w-[280px] mx-auto space-x-1">
+                <a id="nav-dashboard" href="P-EMP_DASHBOARD.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-home text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-products" href="P-EMP_PRODUCT_LIST.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-box text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-map" href="P-EMP_MAP.html" class="flex items-center justify-center p-3">
+                    <div class="w-12 h-12 rounded-xl bg-primary/30 flex items-center justify-center">
+                        <i class="fas fa-map-marker-alt text-primary text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-reports" href="P-EMP_REPORT.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-chart-bar text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 底部导航栏交互
+            document.querySelector('#nav-dashboard').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_DASHBOARD.html';
+            });
+            
+            document.querySelector('#nav-products').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_PRODUCT_LIST.html';
+            });
+            
+            document.querySelector('#nav-map').addEventListener('click', function(e) {
+                e.preventDefault();
+                // 已在地图页面，无需操作
+            });
+            
+            document.querySelector('#nav-reports').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_REPORT.html';
+            });
+            
+            // 地图筛选交互
+            const filterButtons = document.querySelectorAll('#map-filter button');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // 移除所有按钮的激活状态
+                    filterButtons.forEach(btn => {
+                        btn.classList.remove('glass-card-active');
+                        btn.classList.add('glass-card');
+                    });
+                    
+                    // 激活当前按钮
+                    this.classList.remove('glass-card');
+                    this.classList.add('glass-card-active');
+                    
+                    // 根据筛选条件更新地图标记
+                    const filterId = this.id;
+                    filterMapMarkers(filterId);
+                });
+            });
+            
+            // 路径选择器交互
+            const pathOptions = document.querySelectorAll('.path-selector-option');
+            const mapSection = document.querySelector('#map-section');
+            const taskListSection = document.querySelector('#task-list-section');
+            
+            pathOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // 移除所有选项的激活状态
+                    pathOptions.forEach(opt => {
+                        opt.classList.remove('active');
+                        const icon = opt.querySelector('i');
+                        icon.classList.remove('text-primary');
+                        icon.classList.add('text-gray-600');
+                    });
+                    
+                    // 激活当前选项
+                    this.classList.add('active');
+                    const icon = this.querySelector('i');
+                    icon.classList.remove('text-gray-600');
+                    icon.classList.add('text-primary');
+                    
+                    // 切换显示内容
+                    if (this.id === 'path-map-option') {
+                        mapSection.classList.remove('hidden');
+                        taskListSection.classList.add('hidden');
+                    } else {
+                        mapSection.classList.add('hidden');
+                        taskListSection.classList.remove('hidden');
+                    }
+                });
+            });
+            
+            // 商品标记点交互
+            const productMarkers = document.querySelectorAll('.product-marker');
+            const productInfoCard = document.querySelector('#product-info-card');
+            const closeProductInfo = document.querySelector('#close-product-info');
+            
+            productMarkers.forEach(marker => {
+                marker.addEventListener('click', function() {
+                    const productId = this.querySelector('div').dataset.productId;
+                    showProductInfo(productId);
+                });
+            });
+            
+            closeProductInfo.addEventListener('click', function() {
+                productInfoCard.classList.add('hidden');
+            });
+            
+            // 查看商品详情按钮
+            document.querySelector('#view-product-detail').addEventListener('click', function() {
+                const productId = this.dataset.productId;
+                window.location.href = `P-EMP_PRODUCT_DETAIL.html?product_id=${productId}`;
+            });
+            
+            // 添加到任务按钮
+            document.querySelector('#add-to-task').addEventListener('click', function() {
+                alert('已添加到任务列表');
+                productInfoCard.classList.add('hidden');
+            });
+            
+            // 任务列表项交互
+            const taskItems = document.querySelectorAll('#task-list .glass-card');
+            taskItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    // 移除所有任务项的激活状态
+                    taskItems.forEach(task => {
+                        task.classList.remove('task-item-active');
+                    });
+                    
+                    // 激活当前任务项
+                    this.classList.add('task-item-active');
+                });
+            });
+            
+            // 地图缩放控制
+            let zoomLevel = 1;
+            const mapGrid = document.querySelector('#map-grid');
+            
+            document.querySelector('#zoom-in-btn').addEventListener('click', function() {
+                if (zoomLevel < 1.5) {
+                    zoomLevel += 0.1;
+                    mapGrid.style.transform = `scale(${zoomLevel})`;
+                }
+            });
+            
+            document.querySelector('#zoom-out-btn').addEventListener('click', function() {
+                if (zoomLevel > 0.5) {
+                    zoomLevel -= 0.1;
+                    mapGrid.style.transform = `scale(${zoomLevel})`;
+                }
+            });
+            
+            // 刷新地图按钮
+            document.querySelector('#refresh-map-btn').addEventListener('click', function() {
+                alert('地图数据已更新');
+            });
+            
+            // 解析URL参数
+            function getUrlParams() {
+                const params = {};
+                const queryString = window.location.search.substring(1);
+                const urlParams = new URLSearchParams(queryString);
+                
+                for(const [key, value] of urlParams.entries()) {
+                    params[key] = value;
+                }
+                return params;
+            }
+            
+            // 页面加载时检查是否有任务ID参数
+            const params = getUrlParams();
+            if (params.task_id) {
+                // 如果有任务ID，可以根据任务ID加载特定任务
+                console.log(`加载任务ID: ${params.task_id}`);
+                // 这里可以添加根据任务ID加载特定任务的逻辑
+            }
+            
+            // 辅助函数：根据筛选条件更新地图标记
+            function filterMapMarkers(filterId) {
+                const markers = document.querySelectorAll('.product-marker');
+                
+                markers.forEach(marker => {
+                    const markerDiv = marker.querySelector('div');
+                    
+                    // 根据筛选条件显示或隐藏标记
+                    if (filterId === 'filter-all') {
+                        marker.style.display = 'block';
+                    } else if (filterId === 'filter-expiring' && markerDiv.classList.contains('bg-warning')) {
+                        marker.style.display = 'block';
+                    } else if (filterId === 'filter-expired' && markerDiv.classList.contains('bg-danger')) {
+                        marker.style.display = 'block';
+                    } else if (filterId === 'filter-low-stock' && markerDiv.classList.contains('bg-primary')) {
+                        marker.style.display = 'block';
+                    } else {
+                        marker.style.display = 'none';
+                    }
+                });
+            }
+            
+            // 辅助函数：显示商品信息
+            function showProductInfo(productId) {
+                // 模拟商品数据
+                const productData = {
+                    'prod001': {
+                        name: '有机苹果',
+                        location: 'A1 水果区',
+                        status: '临期',
+                        statusColor: 'text-warning',
+                        indicatorColor: 'bg-warning',
+                        entryDate: '2023-06-10',
+                        shelfLife: '还剩1天'
+                    },
+                    'prod002': {
+                        name: '进口香蕉',
+                        location: 'A1 水果区',
+                        status: '已过期',
+                        statusColor: 'text-danger',
+                        indicatorColor: 'bg-danger',
+                        entryDate: '2023-06-08',
+                        shelfLife: '已过期'
+                    },
+                    'prod003': {
+                        name: '新鲜青菜',
+                        location: 'B1 蔬菜区',
+                        status: '临期',
+                        statusColor: 'text-warning',
+                        indicatorColor: 'bg-warning',
+                        entryDate: '2023-06-11',
+                        shelfLife: '还剩2天'
+                    },
+                    'prod004': {
+                        name: '牛肉块',
+                        location: 'C2 肉类区',
+                        status: '库存低',
+                        statusColor: 'text-primary',
+                        indicatorColor: 'bg-primary',
+                        entryDate: '2023-06-12',
+                        shelfLife: '还剩4天'
+                    },
+                    'prod005': {
+                        name: '三文鱼',
+                        location: 'D1 海鲜区',
+                        status: '已过期',
+                        statusColor: 'text-danger',
+                        indicatorColor: 'bg-danger',
+                        entryDate: '2023-06-09',
+                        shelfLife: '已过期'
+                    }
+                };
+                
+                const product = productData[productId];
+                
+                if (product) {
+                    // 更新商品信息卡片
+                    document.querySelector('#product-name').textContent = product.name;
+                    document.querySelector('#product-location').textContent = product.location;
+                    document.querySelector('#product-status').textContent = product.status;
+                    document.querySelector('#product-status').className = `font-medium ${product.statusColor}`;
+                    document.querySelector('#product-status-indicator').className = `w-3 h-3 rounded-full ${product.indicatorColor} mr-2`;
+                    document.querySelector('#product-entry-date').textContent = product.entryDate;
+                    document.querySelector('#product-shelf-life').textContent = product.shelfLife;
+                    
+                    // 设置查看详情按钮的商品ID
+                    document.querySelector('#view-product-detail').dataset.productId = productId;
+                    
+                    // 显示商品信息卡片
+                    productInfoCard.classList.remove('hidden');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

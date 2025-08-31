@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshGuard - 我的收藏</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#059669',
+                        accent: '#F59E0B',
+                        success: '#34D399',
+                        warning: '#FBBF24',
+                        danger: '#EF4444',
+                        light: 'rgba(255, 255, 255, 0.7)',
+                        dark: 'rgba(15, 23, 42, 0.8)'
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 25%, #f0fdf4 50%, #ecfdf5 75%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-card-active {
+            background: rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-warning {
+            background: rgba(245, 158, 11, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-danger {
+            background: rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        /* 自定义滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <!-- 主容器 -->
+    <div id="app-container" class="pb-16 min-h-screen">
+        <!-- 合并的顶部区域：状态栏+导航栏 -->
+        <header id="top-header" class="glass fixed top-0 left-0 right-0 z-50 px-4 py-3">
+            <!-- iOS状态栏 -->
+            <div id="ios-status-bar" class="h-7 flex justify-between items-center px-4">
+                <div id="time" class="text-xs font-semibold text-gray-800">9:41</div>
+                <div id="status-icons" class="flex items-center space-x-1">
+                    <i class="fas fa-signal text-xs text-gray-800"></i>
+                    <i class="fas fa-wifi text-xs text-gray-800"></i>
+                    <i class="fas fa-battery-three-quarters text-xs text-gray-800"></i>
+                </div>
+            </div>
+            <!-- 导航栏 -->
+            <div id="top-nav" class="flex justify-between items-center">
+            <div class="flex items-center">
+                <button id="back-btn" class="p-2 rounded-full glass mr-3">
+                    <i class="fas fa-arrow-left text-gray-800"></i>
+                </button>
+                <div id="page-title" class="text-lg font-bold text-gray-800">我的收藏</div>
+            </div>
+            <div id="header-actions" class="flex items-center space-x-3">
+                <button id="search-btn" class="p-2 rounded-full glass">
+                    <i class="fas fa-search text-gray-800"></i>
+                </button>
+            </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main id="main-content" class="pt-24 px-4 pb-6 overflow-y-auto custom-scrollbar">
+            <!-- 收藏商品列表 -->
+            <section id="favorites-list" class="mb-6">
+                <div id="favorites-count" class="text-sm text-gray-600 mb-4">共 8 件收藏商品</div>
+                
+                <div id="favorites-grid" class="grid grid-cols-2 gap-4">
+                    <!-- 收藏商品项1 -->
+                    <div id="favorite-item-1" class="glass-card p-3 rounded-2xl relative" data-product-id="prod001">
+                        <div id="favorite-item-1-image" class="w-full h-32 rounded-xl overflow-hidden mb-2">
+                            <img src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6" alt="有机草莓" data-category="水果" class="w-full h-full object-cover">
+                        </div>
+                        <div id="favorite-item-1-status" class="absolute top-2 right-2 px-2 py-1 rounded-full bg-success/80 text-white text-xs">
+                            新鲜
+                        </div>
+                        <h3 id="favorite-item-1-name" class="text-sm font-semibold text-gray-800 mb-1">有机草莓</h3>
+                        <div id="favorite-item-1-price" class="text-accent font-bold text-sm mb-2">¥15.9/盒</div>
+                        <div id="favorite-item-1-actions" class="flex justify-between items-center">
+                            <button id="favorite-item-1-detail-btn" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                查看详情
+                            </button>
+                            <button id="favorite-item-1-unfavorite-btn" class="text-xs bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full">
+                                取消收藏
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 收藏商品项2 -->
+                    <div id="favorite-item-2" class="glass-card p-3 rounded-2xl relative" data-product-id="prod002">
+                        <div id="favorite-item-2-image" class="w-full h-32 rounded-xl overflow-hidden mb-2">
+                            <img src="https://i.pinimg.com/736x/e4/5d/2e/e45d2e41c17cbe4d1ab93f595fcec3be.jpg" alt="牛油果" data-category="水果" class="w-full h-full object-cover">
+                        </div>
+                        <div id="favorite-item-2-status" class="absolute top-2 right-2 px-2 py-1 rounded-full bg-warning/80 text-white text-xs">
+                            临期
+                        </div>
+                        <h3 id="favorite-item-2-name" class="text-sm font-semibold text-gray-800 mb-1">进口牛油果</h3>
+                        <div id="favorite-item-2-price" class="text-accent font-bold text-sm mb-2">¥12.8/个 <span class="line-through text-gray-400 text-xs">¥18.8</span></div>
+                        <div id="favorite-item-2-actions" class="flex justify-between items-center">
+                            <button id="favorite-item-2-detail-btn" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                查看详情
+                            </button>
+                            <button id="favorite-item-2-unfavorite-btn" class="text-xs bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full">
+                                取消收藏
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 收藏商品项3 -->
+                    <div id="favorite-item-3" class="glass-card p-3 rounded-2xl relative" data-product-id="prod003">
+                        <div id="favorite-item-3-image" class="w-full h-32 rounded-xl overflow-hidden mb-2">
+                            <img src="https://images.unsplash.com/photo-1459411621453-7b03977f4bfc" alt="西兰花" data-category="蔬菜" class="w-full h-full object-cover">
+                        </div>
+                        <div id="favorite-item-3-status" class="absolute top-2 right-2 px-2 py-1 rounded-full bg-success/80 text-white text-xs">
+                            新鲜
+                        </div>
+                        <h3 id="favorite-item-3-name" class="text-sm font-semibold text-gray-800 mb-1">有机西兰花</h3>
+                        <div id="favorite-item-3-price" class="text-accent font-bold text-sm mb-2">¥8.5/份</div>
+                        <div id="favorite-item-3-actions" class="flex justify-between items-center">
+                            <button id="favorite-item-3-detail-btn" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                查看详情
+                            </button>
+                            <button id="favorite-item-3-unfavorite-btn" class="text-xs bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full">
+                                取消收藏
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 收藏商品项4 -->
+                    <div id="favorite-item-4" class="glass-card p-3 rounded-2xl relative" data-product-id="prod004">
+                        <div id="favorite-item-4-image" class="w-full h-32 rounded-xl overflow-hidden mb-2">
+                            <img src="https://images.unsplash.com/photo-1592924357228-91a4daadcfea" alt="樱桃番茄" data-category="蔬菜" class="w-full h-full object-cover">
+                        </div>
+                        <div id="favorite-item-4-status" class="absolute top-2 right-2 px-2 py-1 rounded-full bg-success/80 text-white text-xs">
+                            新鲜
+                        </div>
+                        <h3 id="favorite-item-4-name" class="text-sm font-semibold text-gray-800 mb-1">樱桃番茄</h3>
+                        <div id="favorite-item-4-price" class="text-accent font-bold text-sm mb-2">¥9.9/盒</div>
+                        <div id="favorite-item-4-actions" class="flex justify-between items-center">
+                            <button id="favorite-item-4-detail-btn" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                查看详情
+                            </button>
+                            <button id="favorite-item-4-unfavorite-btn" class="text-xs bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full">
+                                取消收藏
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 收藏商品项5 -->
+                    <div id="favorite-item-5" class="glass-card p-3 rounded-2xl relative" data-product-id="prod005">
+                        <div id="favorite-item-5-image" class="w-full h-32 rounded-xl overflow-hidden mb-2">
+                            <img src="https://images.unsplash.com/photo-1603048297172-c92544798d5a" alt="猪里脊肉" data-category="肉类" class="w-full h-full object-cover">
+                        </div>
+                        <div id="favorite-item-5-status" class="absolute top-2 right-2 px-2 py-1 rounded-full bg-success/80 text-white text-xs">
+                            新鲜
+                        </div>
+                        <h3 id="favorite-item-5-name" class="text-sm font-semibold text-gray-800 mb-1">猪里脊肉</h3>
+                        <div id="favorite-item-5-price" class="text-accent font-bold text-sm mb-2">¥28.8/500g</div>
+                        <div id="favorite-item-5-actions" class="flex justify-between items-center">
+                            <button id="favorite-item-5-detail-btn" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                查看详情
+                            </button>
+                            <button id="favorite-item-5-unfavorite-btn" class="text-xs bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full">
+                                取消收藏
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 收藏商品项6 -->
+                    <div id="favorite-item-6" class="glass-card p-3 rounded-2xl relative" data-product-id="prod006">
+                        <div id="favorite-item-6-image" class="w-full h-32 rounded-xl overflow-hidden mb-2">
+                            <img src="https://i.pinimg.com/1200x/5c/78/a6/5c78a64c12ec22fd06fbb93ad5cbd83f.jpg" alt="三文鱼" data-category="海鲜" class="w-full h-full object-cover">
+                        </div>
+                        <div id="favorite-item-6-status" class="absolute top-2 right-2 px-2 py-1 rounded-full bg-warning/80 text-white text-xs">
+                            临期
+                        </div>
+                        <h3 id="favorite-item-6-name" class="text-sm font-semibold text-gray-800 mb-1">挪威三文鱼</h3>
+                        <div id="favorite-item-6-price" class="text-accent font-bold text-sm mb-2">¥45.5/300g <span class="line-through text-gray-400 text-xs">¥68.0</span></div>
+                        <div id="favorite-item-6-actions" class="flex justify-between items-center">
+                            <button id="favorite-item-6-detail-btn" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                查看详情
+                            </button>
+                            <button id="favorite-item-6-unfavorite-btn" class="text-xs bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full">
+                                取消收藏
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 收藏商品项7 -->
+                    <div id="favorite-item-7" class="glass-card p-3 rounded-2xl relative" data-product-id="prod007">
+                        <div id="favorite-item-7-image" class="w-full h-32 rounded-xl overflow-hidden mb-2">
+                            <img src="https://images.unsplash.com/photo-1498557850523-fd3d118b962e" alt="蓝莓" data-category="水果" class="w-full h-full object-cover">
+                        </div>
+                        <div id="favorite-item-7-status" class="absolute top-2 right-2 px-2 py-1 rounded-full bg-success/80 text-white text-xs">
+                            新鲜
+                        </div>
+                        <h3 id="favorite-item-7-name" class="text-sm font-semibold text-gray-800 mb-1">智利蓝莓</h3>
+                        <div id="favorite-item-7-price" class="text-accent font-bold text-sm mb-2">¥22.9/盒</div>
+                        <div id="favorite-item-7-actions" class="flex justify-between items-center">
+                            <button id="favorite-item-7-detail-btn" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                查看详情
+                            </button>
+                            <button id="favorite-item-7-unfavorite-btn" class="text-xs bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full">
+                                取消收藏
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 收藏商品项8 -->
+                    <div id="favorite-item-8" class="glass-card p-3 rounded-2xl relative" data-product-id="prod008">
+                        <div id="favorite-item-8-image" class="w-full h-32 rounded-xl overflow-hidden mb-2">
+                            <img src="https://images.unsplash.com/photo-1604503468506-a8da13d82791" alt="鸡胸肉" data-category="肉类" class="w-full h-full object-cover">
+                        </div>
+                        <div id="favorite-item-8-status" class="absolute top-2 right-2 px-2 py-1 rounded-full bg-success/80 text-white text-xs">
+                            新鲜
+                        </div>
+                        <h3 id="favorite-item-8-name" class="text-sm font-semibold text-gray-800 mb-1">去皮鸡胸肉</h3>
+                        <div id="favorite-item-8-price" class="text-accent font-bold text-sm mb-2">¥19.8/400g</div>
+                        <div id="favorite-item-8-actions" class="flex justify-between items-center">
+                            <button id="favorite-item-8-detail-btn" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                查看详情
+                            </button>
+                            <button id="favorite-item-8-unfavorite-btn" class="text-xs bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full">
+                                取消收藏
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 空状态提示 (默认隐藏) -->
+            <section id="empty-state" class="hidden flex flex-col items-center justify-center py-12">
+                <div id="empty-icon" class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                    <i class="fas fa-star text-gray-300 text-3xl"></i>
+                </div>
+                <h3 id="empty-title" class="text-lg font-semibold text-gray-800 mb-2">暂无收藏商品</h3>
+                <p id="empty-desc" class="text-sm text-gray-600 mb-6 text-center">您可以在浏览商品时点击收藏按钮<br>将喜欢的商品添加到收藏夹</p>
+                <a id="browse-products-btn" href="P-CUS_PRODUCT_OVERVIEW.html" class="px-6 py-2 bg-primary text-white rounded-full font-medium">
+                    去浏览商品
+                </a>
+            </section>
+        </main>
+    </div>
+
+    <!-- 取消收藏确认弹窗 (默认隐藏) -->
+    <div id="unfavorite-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div id="modal-backdrop" class="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
+        <div id="modal-content" class="glass-card p-6 rounded-3xl w-[80%] max-w-xs z-10">
+            <h3 id="modal-title" class="text-lg font-semibold text-gray-800 mb-3 text-center">确认取消收藏</h3>
+            <p id="modal-desc" class="text-sm text-gray-600 mb-6 text-center">确定要将"<span id="product-name-placeholder">商品名称</span>"从收藏夹中移除吗？</p>
+            <div id="modal-actions" class="flex space-x-3">
+                <button id="cancel-unfavorite-btn" class="flex-1 py-2.5 bg-gray-200 text-gray-700 rounded-full font-medium">
+                    取消
+                </button>
+                <button id="confirm-unfavorite-btn" class="flex-1 py-2.5 bg-danger text-white rounded-full font-medium">
+                    确认移除
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 取消收藏成功提示 (默认隐藏) -->
+    <div id="unfavorite-success-toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 bg-gray-800/90 text-white px-4 py-3 rounded-full text-sm hidden">
+        <i class="fas fa-check-circle mr-2"></i>已从收藏夹移除
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 模拟数据
+            const favoriteProducts = [
+                { id: "prod001", name: "有机草莓", price: "¥15.9/盒", status: "新鲜", image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6" },
+                { id: "prod002", name: "进口牛油果", price: "¥12.8/个", originalPrice: "¥18.8", status: "临期", image: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578" },
+                { id: "prod003", name: "有机西兰花", price: "¥8.5/份", status: "新鲜", image: "https://images.unsplash.com/photo-1459411621453-7b03977f4bfc" },
+                { id: "prod004", name: "樱桃番茄", price: "¥9.9/盒", status: "新鲜", image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea" },
+                { id: "prod005", name: "猪里脊肉", price: "¥28.8/500g", status: "新鲜", image: "https://images.unsplash.com/photo-1603048297172-c92544798d5a" },
+                { id: "prod006", name: "挪威三文鱼", price: "¥45.5/300g", originalPrice: "¥68.0", status: "临期", image: "https://images.unsplash.com/photo-1544943910-4c1dc44aab44" },
+                { id: "prod007", name: "智利蓝莓", price: "¥22.9/盒", status: "新鲜", image: "https://images.unsplash.com/photo-1498557850523-fd3d118b962e" },
+                { id: "prod008", name: "去皮鸡胸肉", price: "¥19.8/400g", status: "新鲜", image: "https://images.unsplash.com/photo-1604503468506-a8da13d82791" }
+            ];
+            
+            // 更新收藏数量
+            document.querySelector('#favorites-count').textContent = `共 ${favoriteProducts.length} 件收藏商品`;
+            
+            // 返回按钮点击事件
+            document.querySelector('#back-btn').addEventListener('click', function() {
+                window.location.href = 'P-CUS_USER_CENTER.html';
+            });
+            
+            // 搜索按钮点击事件
+            document.querySelector('#search-btn').addEventListener('click', function() {
+                console.log('搜索功能待实现');
+            });
+            
+            // 浏览商品按钮点击事件
+            document.querySelector('#browse-products-btn').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-CUS_PRODUCT_OVERVIEW.html';
+            });
+            
+            // 为每个收藏商品添加交互
+            favoriteProducts.forEach((product, index) => {
+                const itemId = index + 1;
+                
+                // 查看详情按钮点击事件
+                document.querySelector(`#favorite-item-${itemId}-detail-btn`).addEventListener('click', function() {
+                    window.location.href = `P-CUS_PRODUCT_DETAIL.html?productId=${product.id}`;
+                });
+                
+                // 取消收藏按钮点击事件
+                document.querySelector(`#favorite-item-${itemId}-unfavorite-btn`).addEventListener('click', function() {
+                    // 显示确认弹窗
+                    const modal = document.querySelector('#unfavorite-modal');
+                    const productNamePlaceholder = document.querySelector('#product-name-placeholder');
+                    
+                    productNamePlaceholder.textContent = product.name;
+                    modal.setAttribute('data-product-id', product.id);
+                    modal.classList.remove('hidden');
+                });
+            });
+            
+            // 弹窗取消按钮点击事件
+            document.querySelector('#cancel-unfavorite-btn').addEventListener('click', function() {
+                document.querySelector('#unfavorite-modal').classList.add('hidden');
+            });
+            
+            // 弹窗背景点击事件
+            document.querySelector('#modal-backdrop').addEventListener('click', function() {
+                document.querySelector('#unfavorite-modal').classList.add('hidden');
+            });
+            
+            // 弹窗确认按钮点击事件
+            document.querySelector('#confirm-unfavorite-btn').addEventListener('click', function() {
+                const modal = document.querySelector('#unfavorite-modal');
+                const productId = modal.getAttribute('data-product-id');
+                
+                // 隐藏弹窗
+                modal.classList.add('hidden');
+                
+                // 找到对应的商品元素
+                const productElement = document.querySelector(`[data-product-id="${productId}"]`);
+                if (productElement) {
+                    // 移除商品元素
+                    productElement.classList.add('animate-fade-out');
+                    setTimeout(() => {
+                        productElement.remove();
+                        
+                        // 更新收藏数量
+                        const remainingItems = document.querySelectorAll('#favorites-grid > div').length;
+                        document.querySelector('#favorites-count').textContent = `共 ${remainingItems} 件收藏商品`;
+                        
+                        // 如果没有收藏商品，显示空状态
+                        if (remainingItems === 0) {
+                            document.querySelector('#favorites-list').classList.add('hidden');
+                            document.querySelector('#empty-state').classList.remove('hidden');
+                        }
+                    }, 300);
+                }
+                
+                // 显示成功提示
+                const toast = document.querySelector('#unfavorite-success-toast');
+                toast.classList.remove('hidden');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 2000);
+            });
+            
+            // 检查是否有收藏商品
+            if (favoriteProducts.length === 0) {
+                document.querySelector('#favorites-list').classList.add('hidden');
+                document.querySelector('#empty-state').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

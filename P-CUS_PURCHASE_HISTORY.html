@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshGuard - 购买历史</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#059669',
+                        accent: '#F59E0B',
+                        success: '#34D399',
+                        warning: '#FBBF24',
+                        danger: '#EF4444',
+                        light: 'rgba(255, 255, 255, 0.7)',
+                        dark: 'rgba(15, 23, 42, 0.8)'
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 25%, #f0fdf4 50%, #ecfdf5 75%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-card-active {
+            background: rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-warning {
+            background: rgba(245, 158, 11, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-danger {
+            background: rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        /* 自定义滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+        }
+        
+        /* 购买记录展开/折叠动画 */
+        .purchase-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .purchase-details.expanded {
+            max-height: 500px;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <!-- 主容器 -->
+    <div id="app-container" class="min-h-screen">
+        <!-- 合并的顶部组件：状态栏 + 导航栏 -->
+        <header id="top-header" class="glass fixed top-0 left-0 right-0 z-50 px-4 py-3">
+            <!-- iOS状态栏 -->
+            <div id="ios-status-bar" class="flex justify-between items-center px-4 h-7">
+                <div id="time" class="text-xs font-semibold text-gray-800">9:41</div>
+                <div id="status-icons" class="flex items-center space-x-1">
+                    <i class="fas fa-signal text-xs text-gray-800"></i>
+                    <i class="fas fa-wifi text-xs text-gray-800"></i>
+                    <i class="fas fa-battery-three-quarters text-xs text-gray-800"></i>
+                </div>
+            </div>
+            <!-- 导航栏 -->
+            <div id="top-nav" class="px-4 py-3 flex justify-between items-center">
+                <div id="header-left" class="flex items-center">
+                    <a href="P-CUS_USER_CENTER.html" id="back-button" class="p-2 rounded-full glass mr-2">
+                        <i class="fas fa-arrow-left text-gray-800"></i>
+                    </a>
+                    <h1 id="page-title" class="text-lg font-bold text-gray-800">购买历史</h1>
+                </div>
+                <div id="header-actions" class="flex items-center space-x-3">
+                    <button id="filter-button" class="p-2 rounded-full glass">
+                        <i class="fas fa-filter text-gray-800"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main id="main-content" class="pt-32 px-4 pb-6 overflow-y-auto custom-scrollbar">
+            <!-- 购买记录列表 -->
+            <section id="purchase-history-list" class="mb-6 space-y-4">
+                <!-- 今日购买记录 -->
+                <div id="today-purchases" class="mb-4">
+                    <h2 id="today-title" class="text-sm font-semibold text-gray-600 mb-2">今日</h2>
+                    
+                    <!-- 购买记录1 -->
+                    <div id="purchase-1" class="glass-card p-4 mb-3">
+                        <div id="purchase-1-header" class="flex justify-between items-center mb-2">
+                            <div id="purchase-1-date" class="text-sm font-medium text-gray-800">今天 14:30</div>
+                            <div id="purchase-1-amount" class="text-sm font-bold text-primary">¥86.50</div>
+                        </div>
+                        <div id="purchase-1-summary" class="flex justify-between items-center">
+                            <div id="purchase-1-items" class="text-xs text-gray-600">共5件商品</div>
+                            <button id="purchase-1-toggle" class="text-xs text-primary flex items-center" data-purchase-id="1">
+                                <span id="purchase-1-toggle-text">查看详情</span>
+                                <i id="purchase-1-toggle-icon" class="fas fa-chevron-down ml-1 text-primary"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- 购买详情（默认折叠） -->
+                        <div id="purchase-1-details" class="purchase-details mt-2 pt-2 border-t border-gray-200">
+                            <div id="purchase-1-item-list" class="space-y-2">
+                                <div id="purchase-1-item-1" class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <div id="purchase-1-item-1-image" class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 mr-2">
+                                            <img src="https://images.unsplash.com/photo-1579113800032-c38bd7635818" alt="有机西红柿" data-category="蔬菜">
+                                        </div>
+                                        <div>
+                                            <div id="purchase-1-item-1-name" class="text-sm font-medium text-gray-800">有机西红柿</div>
+                                            <div id="purchase-1-item-1-quantity" class="text-xs text-gray-500">500g x 2</div>
+                                        </div>
+                                    </div>
+                                    <div id="purchase-1-item-1-price" class="text-sm text-gray-800">¥15.80</div>
+                                </div>
+                                
+                                <div id="purchase-1-item-2" class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <div id="purchase-1-item-2-image" class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 mr-2">
+                                            <img src="https://images.unsplash.com/photo-1587049352851-8d4e89133924" alt="黄瓜" data-category="蔬菜">
+                                        </div>
+                                        <div>
+                                            <div id="purchase-1-item-2-name" class="text-sm font-medium text-gray-800">黄瓜</div>
+                                            <div id="purchase-1-item-2-quantity" class="text-xs text-gray-500">300g x 1</div>
+                                        </div>
+                                    </div>
+                                    <div id="purchase-1-item-2-price" class="text-sm text-gray-800">¥4.50</div>
+                                </div>
+                                
+                                <div id="purchase-1-item-3" class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <div id="purchase-1-item-3-image" class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 mr-2">
+                                            <img src="https://images.unsplash.com/photo-1619566636858-adf3ef46400b" alt="牛肉" data-category="肉类">
+                                        </div>
+                                        <div>
+                                            <div id="purchase-1-item-3-name" class="text-sm font-medium text-gray-800">精选牛肉</div>
+                                            <div id="purchase-1-item-3-quantity" class="text-xs text-gray-500">500g x 1</div>
+                                        </div>
+                                    </div>
+                                    <div id="purchase-1-item-3-price" class="text-sm text-gray-800">¥48.90</div>
+                                </div>
+                                
+                                <div id="purchase-1-more" class="text-xs text-center text-gray-500 mt-2">
+                                    还有2件商品...
+                                </div>
+                                
+                                <div id="purchase-1-actions" class="flex justify-between mt-3">
+                                    <button id="purchase-1-add-to-list" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                        添加到购物清单
+                                    </button>
+                                    <button id="purchase-1-reorder" class="text-xs bg-primary text-white px-3 py-1.5 rounded-full">
+                                        再次购买
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 昨日购买记录 -->
+                <div id="yesterday-purchases" class="mb-4">
+                    <h2 id="yesterday-title" class="text-sm font-semibold text-gray-600 mb-2">昨日</h2>
+                    
+                    <!-- 购买记录2 -->
+                    <div id="purchase-2" class="glass-card p-4 mb-3">
+                        <div id="purchase-2-header" class="flex justify-between items-center mb-2">
+                            <div id="purchase-2-date" class="text-sm font-medium text-gray-800">昨天 10:15</div>
+                            <div id="purchase-2-amount" class="text-sm font-bold text-primary">¥124.30</div>
+                        </div>
+                        <div id="purchase-2-summary" class="flex justify-between items-center">
+                            <div id="purchase-2-items" class="text-xs text-gray-600">共8件商品</div>
+                            <button id="purchase-2-toggle" class="text-xs text-primary flex items-center" data-purchase-id="2">
+                                <span id="purchase-2-toggle-text">查看详情</span>
+                                <i id="purchase-2-toggle-icon" class="fas fa-chevron-down ml-1 text-primary"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- 购买详情（默认折叠） -->
+                        <div id="purchase-2-details" class="purchase-details mt-2 pt-2 border-t border-gray-200">
+                            <div id="purchase-2-item-list" class="space-y-2">
+                                <div id="purchase-2-item-1" class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <div id="purchase-2-item-1-image" class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 mr-2">
+                                            <img src="https://images.unsplash.com/photo-1550258987-190a2d41a8ba" alt="苹果" data-category="水果">
+                                        </div>
+                                        <div>
+                                            <div id="purchase-2-item-1-name" class="text-sm font-medium text-gray-800">红富士苹果</div>
+                                            <div id="purchase-2-item-1-quantity" class="text-xs text-gray-500">1kg x 1</div>
+                                        </div>
+                                    </div>
+                                    <div id="purchase-2-item-1-price" class="text-sm text-gray-800">¥18.90</div>
+                                </div>
+                                
+                                <div id="purchase-2-item-2" class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <div id="purchase-2-item-2-image" class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 mr-2">
+                                            <img src="https://images.unsplash.com/photo-1528825871115-3581a5387919" alt="牛奶" data-category="乳制品">
+                                        </div>
+                                        <div>
+                                            <div id="purchase-2-item-2-name" class="text-sm font-medium text-gray-800">有机纯牛奶</div>
+                                            <div id="purchase-2-item-2-quantity" class="text-xs text-gray-500">1L x 2</div>
+                                        </div>
+                                    </div>
+                                    <div id="purchase-2-item-2-price" class="text-sm text-gray-800">¥35.60</div>
+                                </div>
+                                
+                                <div id="purchase-2-more" class="text-xs text-center text-gray-500 mt-2">
+                                    还有6件商品...
+                                </div>
+                                
+                                <div id="purchase-2-actions" class="flex justify-between mt-3">
+                                    <button id="purchase-2-add-to-list" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                        添加到购物清单
+                                    </button>
+                                    <button id="purchase-2-reorder" class="text-xs bg-primary text-white px-3 py-1.5 rounded-full">
+                                        再次购买
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 本周购买记录 -->
+                <div id="this-week-purchases" class="mb-4">
+                    <h2 id="this-week-title" class="text-sm font-semibold text-gray-600 mb-2">本周</h2>
+                    
+                    <!-- 购买记录3 -->
+                    <div id="purchase-3" class="glass-card p-4 mb-3">
+                        <div id="purchase-3-header" class="flex justify-between items-center mb-2">
+                            <div id="purchase-3-date" class="text-sm font-medium text-gray-800">周一 16:45</div>
+                            <div id="purchase-3-amount" class="text-sm font-bold text-primary">¥67.80</div>
+                        </div>
+                        <div id="purchase-3-summary" class="flex justify-between items-center">
+                            <div id="purchase-3-items" class="text-xs text-gray-600">共4件商品</div>
+                            <button id="purchase-3-toggle" class="text-xs text-primary flex items-center" data-purchase-id="3">
+                                <span id="purchase-3-toggle-text">查看详情</span>
+                                <i id="purchase-3-toggle-icon" class="fas fa-chevron-down ml-1 text-primary"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- 购买详情（默认折叠） -->
+                        <div id="purchase-3-details" class="purchase-details mt-2 pt-2 border-t border-gray-200">
+                            <div id="purchase-3-item-list" class="space-y-2">
+                                <div id="purchase-3-item-1" class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <div id="purchase-3-item-1-image" class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 mr-2">
+                                            <img src="https://images.unsplash.com/photo-1518569656558-1f25e69d93d7" alt="鸡蛋" data-category="禽蛋">
+                                        </div>
+                                        <div>
+                                            <div id="purchase-3-item-1-name" class="text-sm font-medium text-gray-800">散养土鸡蛋</div>
+                                            <div id="purchase-3-item-1-quantity" class="text-xs text-gray-500">10个 x 1</div>
+                                        </div>
+                                    </div>
+                                    <div id="purchase-3-item-1-price" class="text-sm text-gray-800">¥22.80</div>
+                                </div>
+                                
+                                <div id="purchase-3-item-2" class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <div id="purchase-3-item-2-image" class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 mr-2">
+                                            <img src="https://images.unsplash.com/photo-1598170845058-32b9d6a5da37" alt="香蕉" data-category="水果">
+                                        </div>
+                                        <div>
+                                            <div id="purchase-3-item-2-name" class="text-sm font-medium text-gray-800">香蕉</div>
+                                            <div id="purchase-3-item-2-quantity" class="text-xs text-gray-500">500g x 1</div>
+                                        </div>
+                                    </div>
+                                    <div id="purchase-3-item-2-price" class="text-sm text-gray-800">¥8.50</div>
+                                </div>
+                                
+                                <div id="purchase-3-more" class="text-xs text-center text-gray-500 mt-2">
+                                    还有2件商品...
+                                </div>
+                                
+                                <div id="purchase-3-actions" class="flex justify-between mt-3">
+                                    <button id="purchase-3-add-to-list" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                        添加到购物清单
+                                    </button>
+                                    <button id="purchase-3-reorder" class="text-xs bg-primary text-white px-3 py-1.5 rounded-full">
+                                        再次购买
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 购买记录4 -->
+                    <div id="purchase-4" class="glass-card p-4">
+                        <div id="purchase-4-header" class="flex justify-between items-center mb-2">
+                            <div id="purchase-4-date" class="text-sm font-medium text-gray-800">周日 09:20</div>
+                            <div id="purchase-4-amount" class="text-sm font-bold text-primary">¥156.40</div>
+                        </div>
+                        <div id="purchase-4-summary" class="flex justify-between items-center">
+                            <div id="purchase-4-items" class="text-xs text-gray-600">共12件商品</div>
+                            <button id="purchase-4-toggle" class="text-xs text-primary flex items-center" data-purchase-id="4">
+                                <span id="purchase-4-toggle-text">查看详情</span>
+                                <i id="purchase-4-toggle-icon" class="fas fa-chevron-down ml-1 text-primary"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- 购买详情（默认折叠） -->
+                        <div id="purchase-4-details" class="purchase-details mt-2 pt-2 border-t border-gray-200">
+                            <div id="purchase-4-item-list" class="space-y-2">
+                                <div id="purchase-4-item-1" class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <div id="purchase-4-item-1-image" class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 mr-2">
+                                            <img src="https://images.unsplash.com/photo-1615485290382-441e4d049cb5" alt="三文鱼" data-category="海鲜">
+                                        </div>
+                                        <div>
+                                            <div id="purchase-4-item-1-name" class="text-sm font-medium text-gray-800">挪威三文鱼</div>
+                                            <div id="purchase-4-item-1-quantity" class="text-xs text-gray-500">300g x 1</div>
+                                        </div>
+                                    </div>
+                                    <div id="purchase-4-item-1-price" class="text-sm text-gray-800">¥45.90</div>
+                                </div>
+                                
+                                <div id="purchase-4-more" class="text-xs text-center text-gray-500 mt-2">
+                                    还有11件商品...
+                                </div>
+                                
+                                <div id="purchase-4-actions" class="flex justify-between mt-3">
+                                    <button id="purchase-4-add-to-list" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                        添加到购物清单
+                                    </button>
+                                    <button id="purchase-4-reorder" class="text-xs bg-primary text-white px-3 py-1.5 rounded-full">
+                                        再次购买
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 更早购买记录 -->
+                <div id="earlier-purchases" class="mb-4">
+                    <h2 id="earlier-title" class="text-sm font-semibold text-gray-600 mb-2">更早</h2>
+                    
+                    <!-- 购买记录5 -->
+                    <div id="purchase-5" class="glass-card p-4">
+                        <div id="purchase-5-header" class="flex justify-between items-center mb-2">
+                            <div id="purchase-5-date" class="text-sm font-medium text-gray-800">6月15日 11:30</div>
+                            <div id="purchase-5-amount" class="text-sm font-bold text-primary">¥92.60</div>
+                        </div>
+                        <div id="purchase-5-summary" class="flex justify-between items-center">
+                            <div id="purchase-5-items" class="text-xs text-gray-600">共7件商品</div>
+                            <button id="purchase-5-toggle" class="text-xs text-primary flex items-center" data-purchase-id="5">
+                                <span id="purchase-5-toggle-text">查看详情</span>
+                                <i id="purchase-5-toggle-icon" class="fas fa-chevron-down ml-1 text-primary"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- 购买详情（默认折叠） -->
+                        <div id="purchase-5-details" class="purchase-details mt-2 pt-2 border-t border-gray-200">
+                            <div id="purchase-5-item-list" class="space-y-2">
+                                <div id="purchase-5-item-1" class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <div id="purchase-5-item-1-image" class="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 mr-2">
+                                            <img src="https://images.unsplash.com/photo-1601493700631-2b16ec4b4716" alt="菠菜" data-category="蔬菜">
+                                        </div>
+                                        <div>
+                                            <div id="purchase-5-item-1-name" class="text-sm font-medium text-gray-800">有机菠菜</div>
+                                            <div id="purchase-5-item-1-quantity" class="text-xs text-gray-500">250g x 1</div>
+                                        </div>
+                                    </div>
+                                    <div id="purchase-5-item-1-price" class="text-sm text-gray-800">¥6.80</div>
+                                </div>
+                                
+                                <div id="purchase-5-more" class="text-xs text-center text-gray-500 mt-2">
+                                    还有6件商品...
+                                </div>
+                                
+                                <div id="purchase-5-actions" class="flex justify-between mt-3">
+                                    <button id="purchase-5-add-to-list" class="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-full">
+                                        添加到购物清单
+                                    </button>
+                                    <button id="purchase-5-reorder" class="text-xs bg-primary text-white px-3 py-1.5 rounded-full">
+                                        再次购买
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取URL参数
+            function getUrlParams() {
+                const params = {};
+                const queryString = window.location.search.substring(1);
+                const urlParams = new URLSearchParams(queryString);
+                
+                for(const [key, value] of urlParams.entries()) {
+                    params[key] = value;
+                }
+                return params;
+            }
+            
+            // 处理购买记录展开/折叠
+            const toggleButtons = document.querySelectorAll('[id$="-toggle"]');
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const purchaseId = this.getAttribute('data-purchase-id');
+                    const detailsElement = document.querySelector(`#purchase-${purchaseId}-details`);
+                    const iconElement = document.querySelector(`#purchase-${purchaseId}-toggle-icon`);
+                    const textElement = document.querySelector(`#purchase-${purchaseId}-toggle-text`);
+                    
+                    if (detailsElement.classList.contains('expanded')) {
+                        detailsElement.classList.remove('expanded');
+                        iconElement.classList.remove('fa-chevron-up');
+                        iconElement.classList.add('fa-chevron-down');
+                        textElement.textContent = '查看详情';
+                    } else {
+                        detailsElement.classList.add('expanded');
+                        iconElement.classList.remove('fa-chevron-down');
+                        iconElement.classList.add('fa-chevron-up');
+                        textElement.textContent = '收起详情';
+                    }
+                });
+            });
+            
+            // 处理返回按钮
+            document.querySelector('#back-button').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-CUS_USER_CENTER.html';
+            });
+            
+            // 处理筛选按钮
+            document.querySelector('#filter-button').addEventListener('click', function() {
+                // 在实际应用中，这里会显示筛选选项
+                console.log('显示购买历史筛选选项');
+            });
+            
+            // 处理添加到购物清单按钮
+            const addToListButtons = document.querySelectorAll('[id$="-add-to-list"]');
+            addToListButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const purchaseId = this.id.split('-')[1];
+                    console.log(`将购买记录 ${purchaseId} 添加到购物清单`);
+                    window.location.href = `P-CUS_SHOPPING_LIST.html?from_purchase=${purchaseId}`;
+                });
+            });
+            
+            // 处理再次购买按钮
+            const reorderButtons = document.querySelectorAll('[id$="-reorder"]');
+            reorderButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const purchaseId = this.id.split('-')[1];
+                    console.log(`再次购买购买记录 ${purchaseId} 中的商品`);
+                    window.location.href = `P-CUS_SHOPPING_LIST.html?reorder=${purchaseId}`;
+                });
+            });
+            
+            // 如果是从购物清单页面跳转过来的，处理相关参数
+            const params = getUrlParams();
+            if (params.from_shopping_list) {
+                console.log('从购物清单页面跳转而来，用于添加历史商品');
+                // 在实际应用中，这里会高亮显示可添加的商品
+            }
+        });
+    </script>
+</body>
+</html>

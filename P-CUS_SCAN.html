@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshGuard - 扫码查询</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#059669',
+                        accent: '#F59E0B',
+                        success: '#34D399',
+                        warning: '#FBBF24',
+                        danger: '#EF4444',
+                        light: 'rgba(255, 255, 255, 0.7)',
+                        dark: 'rgba(15, 23, 42, 0.8)'
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 25%, #f0fdf4 50%, #ecfdf5 75%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-card-active {
+            background: rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-warning {
+            background: rgba(245, 158, 11, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-danger {
+            background: rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        /* 自定义滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+        }
+        
+        /* 扫码框样式 */
+        .scan-frame {
+            position: relative;
+            width: 80%;
+            aspect-ratio: 1/1;
+            max-width: 300px;
+            border: 2px solid rgba(16, 185, 129, 0.7);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        .scan-corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: #10B981;
+            border-style: solid;
+            border-width: 0;
+        }
+        
+        .top-left {
+            top: 0;
+            left: 0;
+            border-top-width: 3px;
+            border-left-width: 3px;
+            border-top-left-radius: 8px;
+        }
+        
+        .top-right {
+            top: 0;
+            right: 0;
+            border-top-width: 3px;
+            border-right-width: 3px;
+            border-top-right-radius: 8px;
+        }
+        
+        .bottom-left {
+            bottom: 0;
+            left: 0;
+            border-bottom-width: 3px;
+            border-left-width: 3px;
+            border-bottom-left-radius: 8px;
+        }
+        
+        .bottom-right {
+            bottom: 0;
+            right: 0;
+            border-bottom-width: 3px;
+            border-right-width: 3px;
+            border-bottom-right-radius: 8px;
+        }
+        
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #10B981, transparent);
+            top: 50%;
+            animation: scanAnimation 2s linear infinite;
+        }
+        
+        @keyframes scanAnimation {
+            0% {
+                top: 10%;
+            }
+            50% {
+                top: 90%;
+            }
+            100% {
+                top: 10%;
+            }
+        }
+        
+        .camera-view {
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <!-- 合并的顶部状态栏和导航栏 -->
+    <div id="top-header" class="glass fixed top-0 left-0 right-0 z-50 px-4 py-3">
+        <!-- iOS状态栏 -->
+        <div id="ios-status-bar" class="h-7 flex justify-between items-center px-4">
+            <div id="time" class="text-xs font-semibold text-gray-800">9:41</div>
+            <div id="status-icons" class="flex items-center space-x-1">
+                <i class="fas fa-signal text-xs text-gray-800"></i>
+                <i class="fas fa-wifi text-xs text-gray-800"></i>
+                <i class="fas fa-battery-three-quarters text-xs text-gray-800"></i>
+            </div>
+        </div>
+        <!-- 导航栏 -->
+        <div id="top-nav" class="px-4 py-3 flex justify-between items-center">
+            <div id="back-button" class="w-10 h-10 rounded-full glass flex items-center justify-center">
+                <i class="fas fa-arrow-left text-gray-800"></i>
+            </div>
+            <h1 id="page-title" class="text-lg font-semibold text-gray-800">扫码查询</h1>
+            <div id="placeholder" class="w-10 h-10 opacity-0">
+                <!-- 占位元素，保持标题居中 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div id="app-container" class="min-h-screen">
+
+        <!-- 主内容区 -->
+        <main id="main-content" class="pt-32 px-4 pb-8 flex flex-col items-center justify-start">
+            <!-- 扫码区域 -->
+            <div id="scan-area" class="w-full flex flex-col items-center mb-8">
+                <div id="scan-frame" class="scan-frame mb-4">
+                    <div class="camera-view">
+                        <img src="https://images.unsplash.com/photo-1581833971358-2c8b550f87b3" alt="相机视图" data-category="技术" class="opacity-0">
+                    </div>
+                    <div id="scan-corner-top-left" class="scan-corner top-left"></div>
+                    <div id="scan-corner-top-right" class="scan-corner top-right"></div>
+                    <div id="scan-corner-bottom-left" class="scan-corner bottom-left"></div>
+                    <div id="scan-corner-bottom-right" class="scan-corner bottom-right"></div>
+                    <div id="scan-line" class="scan-line"></div>
+                </div>
+                <p id="scan-tip" class="text-sm text-gray-600 text-center mb-6">
+                    将商品二维码/条形码放入框内<br>自动扫描
+                </p>
+            </div>
+            
+            <!-- 手动输入区域 -->
+            <div id="manual-input-area" class="w-full">
+                <button id="manual-input-button" class="glass-card w-full py-3 px-4 flex items-center justify-center rounded-xl mb-6">
+                    <i class="fas fa-keyboard text-primary mr-2"></i>
+                    <span class="text-gray-700">手动输入商品编码</span>
+                </button>
+                
+                <!-- 手动输入表单 (默认隐藏) -->
+                <div id="manual-input-form" class="glass-card p-4 rounded-xl hidden">
+                    <div class="mb-4">
+                        <label for="product-code" class="block text-sm font-medium text-gray-700 mb-1">商品编码</label>
+                        <input type="text" id="product-code" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="请输入商品编码">
+                    </div>
+                    <button id="search-button" class="w-full bg-primary text-white py-2 rounded-lg font-medium">
+                        查询
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 最近扫描记录 -->
+            <div id="recent-scans" class="w-full mt-8">
+                <h2 id="recent-scans-title" class="text-lg font-semibold text-gray-800 mb-3">最近扫描</h2>
+                <div id="recent-scans-list" class="space-y-3">
+                    <!-- 最近扫描项目1 -->
+                    <div id="recent-scan-1" class="glass-card p-3 rounded-xl flex items-center" data-product-id="prod001">
+                        <div id="recent-scan-1-image" class="w-16 h-16 rounded-lg overflow-hidden mr-3 flex-shrink-0">
+                            <img src="https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6" alt="红富士苹果" data-category="食物" class="w-full h-full object-cover">
+                        </div>
+                        <div id="recent-scan-1-info" class="flex-1">
+                            <h3 id="recent-scan-1-name" class="text-sm font-semibold text-gray-800">红富士苹果</h3>
+                            <div id="recent-scan-1-freshness" class="flex items-center mt-1">
+                                <span id="recent-scan-1-status" class="text-xs px-2 py-0.5 rounded-full bg-success/20 text-success">新鲜</span>
+                                <span id="recent-scan-1-time" class="text-xs text-gray-500 ml-2">10分钟前</span>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </div>
+                    
+                    <!-- 最近扫描项目2 -->
+                    <div id="recent-scan-2" class="glass-card p-3 rounded-xl flex items-center" data-product-id="prod002">
+                        <div id="recent-scan-2-image" class="w-16 h-16 rounded-lg overflow-hidden mr-3 flex-shrink-0">
+                            <img src="https://images.unsplash.com/photo-1563636619-e9143da7973b" alt="有机纯牛奶" data-category="食物" class="w-full h-full object-cover">
+                        </div>
+                        <div id="recent-scan-2-info" class="flex-1">
+                            <h3 id="recent-scan-2-name" class="text-sm font-semibold text-gray-800">有机纯牛奶</h3>
+                            <div id="recent-scan-2-freshness" class="flex items-center mt-1">
+                                <span id="recent-scan-2-status" class="text-xs px-2 py-0.5 rounded-full bg-warning/20 text-warning">临期</span>
+                                <span id="recent-scan-2-time" class="text-xs text-gray-500 ml-2">昨天</span>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 返回按钮点击事件
+            document.querySelector('#back-button').addEventListener('click', function() {
+                window.location.href = 'P-CUS_PRODUCT_OVERVIEW.html';
+            });
+            
+            // 手动输入按钮点击事件
+            document.querySelector('#manual-input-button').addEventListener('click', function() {
+                const inputForm = document.querySelector('#manual-input-form');
+                if (inputForm.classList.contains('hidden')) {
+                    inputForm.classList.remove('hidden');
+                    this.classList.add('hidden');
+                }
+            });
+            
+            // 查询按钮点击事件
+            document.querySelector('#search-button').addEventListener('click', function() {
+                const productCode = document.querySelector('#product-code').value;
+                if (productCode.trim() !== '') {
+                    // 模拟查询成功，跳转到商品详情页
+                    window.location.href = `P-CUS_PRODUCT_DETAIL.html?productId=${productCode}`;
+                } else {
+                    alert('请输入商品编码');
+                }
+            });
+            
+            // 最近扫描项目点击事件
+            document.querySelectorAll('[id^="recent-scan-"]').forEach(item => {
+                if (!item.id.includes('image') && !item.id.includes('info') && 
+                    !item.id.includes('name') && !item.id.includes('freshness') && 
+                    !item.id.includes('status') && !item.id.includes('time')) {
+                    item.addEventListener('click', function() {
+                        const productId = this.dataset.productId;
+                        window.location.href = `P-CUS_PRODUCT_DETAIL.html?productId=${productId}`;
+                    });
+                }
+            });
+            
+            // 模拟扫码功能
+            // 注意：实际扫码功能需要调用设备相机API，在原型阶段仅做UI展示
+            const scanFrame = document.querySelector('#scan-frame');
+            scanFrame.addEventListener('click', function() {
+                console.log('需要调用第三方接口实现相机扫码功能');
+                // 模拟扫码成功，跳转到商品详情页
+                setTimeout(() => {
+                    window.location.href = 'P-CUS_PRODUCT_DETAIL.html?productId=prod003';
+                }, 1000);
+            });
+        });
+    </script>
+</body>
+</html>

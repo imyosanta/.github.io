@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshGuard - 新鲜度反馈</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#059669',
+                        accent: '#F59E0B',
+                        success: '#34D399',
+                        warning: '#FBBF24',
+                        danger: '#EF4444',
+                        light: 'rgba(255, 255, 255, 0.7)',
+                        dark: 'rgba(15, 23, 42, 0.8)'
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 25%, #f0fdf4 50%, #ecfdf5 75%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-card-active {
+            background: rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-warning {
+            background: rgba(245, 158, 11, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-danger {
+            background: rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        /* 自定义滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+        }
+        
+        /* 自定义单选按钮样式 */
+        .custom-radio input[type="radio"] {
+            display: none;
+        }
+        
+        .custom-radio input[type="radio"] + label {
+            position: relative;
+            padding-left: 28px;
+            cursor: pointer;
+            display: inline-block;
+            line-height: 20px;
+        }
+        
+        .custom-radio input[type="radio"] + label:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(16, 185, 129, 0.5);
+            border-radius: 50%;
+            background: transparent;
+        }
+        
+        .custom-radio input[type="radio"]:checked + label:after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10B981;
+        }
+        
+        /* 图片上传区域样式 */
+        .upload-area {
+            border: 2px dashed rgba(16, 185, 129, 0.5);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #10B981;
+            background: rgba(16, 185, 129, 0.05);
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <!-- 合并的顶部栏 -->
+    <div id="top-header" class="glass fixed top-0 left-0 right-0 z-50 px-4 py-3">
+        <!-- iOS状态栏 -->
+        <div id="ios-status-bar" class="h-7 flex justify-between items-center px-4">
+            <div id="time" class="text-xs font-semibold text-gray-800">9:41</div>
+            <div id="status-icons" class="flex items-center space-x-1">
+                <i class="fas fa-signal text-xs text-gray-800"></i>
+                <i class="fas fa-wifi text-xs text-gray-800"></i>
+                <i class="fas fa-battery-three-quarters text-xs text-gray-800"></i>
+            </div>
+        </div>
+        <!-- 导航栏 -->
+        <div id="top-nav" class="px-4 py-3 flex justify-between items-center">
+            <div id="back-button" class="w-10 h-10 rounded-full glass flex items-center justify-center">
+                <i class="fas fa-arrow-left text-gray-800"></i>
+            </div>
+            <h1 id="page-title" class="text-lg font-bold text-gray-800">新鲜度反馈</h1>
+            <div class="w-10 h-10 opacity-0"><!-- 占位元素，保持标题居中 --></div>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div id="app-container" class="pt-32 pb-16 min-h-screen">
+
+        <!-- 主内容区 -->
+        <main id="main-content" class="px-4 pb-24 overflow-y-auto custom-scrollbar">
+            <!-- 商品信息展示 -->
+            <section id="product-info" class="mb-6">
+                <div id="product-card" class="glass-card p-4 rounded-2xl flex items-center">
+                    <div id="product-image" class="w-20 h-20 rounded-xl overflow-hidden bg-white flex-shrink-0">
+                        <img src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&h=400&fit=crop&crop=center" alt="有机草莓" data-category="食品" class="w-full h-full object-cover">
+                    </div>
+                    <div id="product-details" class="ml-4 flex-1">
+                        <h2 id="product-name" class="text-lg font-semibold text-gray-800">有机草莓</h2>
+                        <div id="product-meta" class="flex items-center mt-1">
+                            <span id="product-price" class="text-sm font-medium text-gray-700">¥15.9/盒</span>
+                            <span class="mx-2 text-gray-400">|</span>
+                            <div id="freshness-badge" class="px-2 py-0.5 rounded-full bg-warning/20 text-warning text-xs font-medium">
+                                临期
+                            </div>
+                        </div>
+                        <p id="product-description" class="text-xs text-gray-600 mt-1">
+                            产地: 云南 | 规格: 250g/盒
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 反馈类型选择 -->
+            <section id="feedback-type" class="mb-6">
+                <h3 id="feedback-type-title" class="text-base font-semibold text-gray-800 mb-3">反馈类型</h3>
+                <div id="feedback-type-options" class="glass-card p-4 rounded-2xl space-y-3">
+                    <div id="type-option-1" class="custom-radio">
+                        <input type="radio" id="type-spoiled" name="feedback-type" value="spoiled">
+                        <label for="type-spoiled" class="text-sm text-gray-700">商品腐烂/变质</label>
+                    </div>
+                    <div id="type-option-2" class="custom-radio">
+                        <input type="radio" id="type-damaged" name="feedback-type" value="damaged">
+                        <label for="type-damaged" class="text-sm text-gray-700">包装破损</label>
+                    </div>
+                    <div id="type-option-3" class="custom-radio">
+                        <input type="radio" id="type-date" name="feedback-type" value="date">
+                        <label for="type-date" class="text-sm text-gray-700">日期不符</label>
+                    </div>
+                    <div id="type-option-4" class="custom-radio">
+                        <input type="radio" id="type-freshness" name="feedback-type" value="freshness">
+                        <label for="type-freshness" class="text-sm text-gray-700">新鲜度与显示不符</label>
+                    </div>
+                    <div id="type-option-5" class="custom-radio">
+                        <input type="radio" id="type-other" name="feedback-type" value="other">
+                        <label for="type-other" class="text-sm text-gray-700">其他问题</label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 文字描述 -->
+            <section id="feedback-description" class="mb-6">
+                <h3 id="description-title" class="text-base font-semibold text-gray-800 mb-3">问题描述</h3>
+                <div id="description-container" class="glass-card p-4 rounded-2xl">
+                    <textarea id="description-input" class="w-full h-24 bg-transparent border-none resize-none text-sm text-gray-700 focus:outline-none" placeholder="请详细描述您发现的问题..."></textarea>
+                </div>
+            </section>
+
+            <!-- 图片上传 -->
+            <section id="feedback-images" class="mb-8">
+                <h3 id="images-title" class="text-base font-semibold text-gray-800 mb-3">上传图片</h3>
+                <div id="images-container" class="glass-card p-4 rounded-2xl">
+                    <div id="upload-area" class="upload-area p-4 flex flex-col items-center justify-center">
+                        <div id="upload-icon" class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-2">
+                            <i class="fas fa-camera text-primary"></i>
+                        </div>
+                        <p id="upload-text" class="text-sm text-gray-600 text-center">
+                            点击上传图片<br>
+                            <span class="text-xs text-gray-500">支持JPG、PNG格式，最多3张</span>
+                        </p>
+                        <input type="file" id="image-upload" class="hidden" accept="image/*" multiple>
+                    </div>
+                    
+                    <div id="preview-container" class="mt-4 grid grid-cols-3 gap-2 hidden">
+                        <div id="preview-1" class="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100">
+                            <img id="preview-img-1" src="" alt="预览图片1" data-category="用户上传" class="w-full h-full object-cover">
+                            <button id="remove-img-1" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-danger/80 flex items-center justify-center">
+                                <i class="fas fa-times text-white text-xs"></i>
+                            </button>
+                        </div>
+                        <div id="preview-2" class="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100 hidden">
+                            <img id="preview-img-2" src="" alt="预览图片2" data-category="用户上传" class="w-full h-full object-cover">
+                            <button id="remove-img-2" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-danger/80 flex items-center justify-center">
+                                <i class="fas fa-times text-white text-xs"></i>
+                            </button>
+                        </div>
+                        <div id="preview-3" class="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100 hidden">
+                            <img id="preview-img-3" src="" alt="预览图片3" data-category="用户上传" class="w-full h-full object-cover">
+                            <button id="remove-img-3" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-danger/80 flex items-center justify-center">
+                                <i class="fas fa-times text-white text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 提交按钮 -->
+            <section id="submit-section" class="mb-6">
+                <button id="submit-button" class="w-full py-3 rounded-full bg-primary text-white font-medium text-base shadow-lg">
+                    提交反馈
+                </button>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取URL参数
+            function getUrlParams() {
+                const params = {};
+                const queryString = window.location.search.substring(1);
+                const urlParams = new URLSearchParams(queryString);
+                
+                for(const [key, value] of urlParams.entries()) {
+                    params[key] = value;
+                }
+                return params;
+            }
+            
+            // 获取URL参数
+            const params = getUrlParams();
+            
+            // 如果有商品ID参数，加载商品信息
+            if(params.product_id) {
+                loadProductInfo(params.product_id);
+            }
+            
+            // 加载商品信息的函数
+            function loadProductInfo(productId) {
+                // 在实际应用中，这里会调用API获取数据
+                // 但在这个示例中，我们模拟数据加载
+                const mockProducts = {
+                    "prod1": { 
+                        name: "有机草莓", 
+                        price: "¥15.9/盒", 
+                        freshness: "临期",
+                        description: "产地: 云南 | 规格: 250g/盒",
+                        image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&h=400&fit=crop&crop=center"
+                    },
+                    "prod2": { 
+                        name: "进口牛油果", 
+                        price: "¥12.8/个", 
+                        freshness: "新鲜",
+                        description: "产地: 墨西哥 | 规格: 180g±/个",
+                        image: "https://images.unsplash.com/photo-1519162808019-7de1683fa2ad"
+                    },
+                    "prod3": { 
+                        name: "本地小番茄", 
+                        price: "¥9.9/盒", 
+                        freshness: "临期",
+                        description: "产地: 本地 | 规格: 200g/盒",
+                        image: "https://images.unsplash.com/photo-1561136594-7f68413baa99"
+                    }
+                };
+                
+                // 获取商品信息，如果没有找到则使用默认值
+                const product = mockProducts[productId] || { 
+                    name: "有机草莓", 
+                    price: "¥15.9/盒", 
+                    freshness: "临期",
+                    description: "产地: 云南 | 规格: 250g/盒",
+                    image: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&h=400&fit=crop&crop=center"
+                };
+                
+                // 更新页面UI
+                document.querySelector('#product-name').textContent = product.name;
+                document.querySelector('#product-price').textContent = product.price;
+                document.querySelector('#product-description').textContent = product.description;
+                
+                // 更新商品图片
+                const productImage = document.querySelector('#product-image img');
+                productImage.src = product.image;
+                productImage.alt = product.name;
+                
+                // 更新新鲜度标签
+                const freshnessElement = document.querySelector('#freshness-badge');
+                if (product.freshness === "新鲜") {
+                    freshnessElement.className = "px-2 py-0.5 rounded-full bg-success/20 text-success text-xs font-medium";
+                } else if (product.freshness === "临期") {
+                    freshnessElement.className = "px-2 py-0.5 rounded-full bg-warning/20 text-warning text-xs font-medium";
+                } else {
+                    freshnessElement.className = "px-2 py-0.5 rounded-full bg-danger/20 text-danger text-xs font-medium";
+                }
+                freshnessElement.textContent = product.freshness;
+            }
+            
+            // 返回按钮点击事件
+            document.querySelector('#back-button').addEventListener('click', function() {
+                // 如果是从商品详情页来的，返回商品详情页
+                if(params.product_id) {
+                    window.location.href = `P-CUS_PRODUCT_DETAIL.html?product_id=${params.product_id}`;
+                } else {
+                    // 否则返回用户中心
+                    window.location.href = 'P-CUS_USER_CENTER.html';
+                }
+            });
+            
+            // 图片上传区域点击事件
+            document.querySelector('#upload-area').addEventListener('click', function() {
+                document.querySelector('#image-upload').click();
+            });
+            
+            // 图片上传处理
+            document.querySelector('#image-upload').addEventListener('change', function(e) {
+                const files = e.target.files;
+                if (!files.length) return;
+                
+                // 显示预览容器
+                document.querySelector('#preview-container').classList.remove('hidden');
+                
+                // 限制最多上传3张图片
+                const maxFiles = Math.min(files.length, 3);
+                
+                for (let i = 0; i < maxFiles; i++) {
+                    const file = files[i];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const previewImg = document.querySelector(`#preview-img-${i+1}`);
+                        const previewContainer = document.querySelector(`#preview-${i+1}`);
+                        
+                        previewImg.src = e.target.result;
+                        previewContainer.classList.remove('hidden');
+                    }
+                    
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // 删除预览图片
+            document.querySelectorAll('[id^="remove-img-"]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const index = this.id.split('-')[2];
+                    const previewContainer = document.querySelector(`#preview-${index}`);
+                    const previewImg = document.querySelector(`#preview-img-${index}`);
+                    
+                    previewImg.src = '';
+                    previewContainer.classList.add('hidden');
+                    
+                    // 如果所有预览都被隐藏，则隐藏预览容器
+                    const visiblePreviews = document.querySelectorAll('#preview-container > div:not(.hidden)');
+                    if (visiblePreviews.length === 0) {
+                        document.querySelector('#preview-container').classList.add('hidden');
+                    }
+                });
+            });
+            
+            // 提交按钮点击事件
+            document.querySelector('#submit-button').addEventListener('click', function() {
+                // 获取选中的反馈类型
+                let selectedType = '';
+                document.querySelectorAll('input[name="feedback-type"]').forEach(radio => {
+                    if (radio.checked) {
+                        selectedType = radio.value;
+                    }
+                });
+                
+                // 获取描述文本
+                const description = document.querySelector('#description-input').value;
+                
+                // 验证表单
+                if (!selectedType) {
+                    alert('请选择反馈类型');
+                    return;
+                }
+                
+                if (!description.trim()) {
+                    alert('请填写问题描述');
+                    return;
+                }
+                
+                // 在实际应用中，这里会调用API提交反馈
+                console.log('提交反馈:', {
+                    product_id: params.product_id,
+                    feedback_type: selectedType,
+                    description: description,
+                    // 图片数据在实际应用中会上传到服务器
+                });
+                
+                // 显示提交成功提示
+                alert('反馈已提交，感谢您的宝贵意见');
+                
+                // 返回上一页
+                if(params.product_id) {
+                    window.location.href = `P-CUS_PRODUCT_DETAIL.html?product_id=${params.product_id}`;
+                } else {
+                    window.location.href = 'P-CUS_USER_CENTER.html';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

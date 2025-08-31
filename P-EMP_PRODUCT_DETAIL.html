@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshGuard - 商品详情</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#059669',
+                        accent: '#F59E0B',
+                        success: '#34D399',
+                        warning: '#FBBF24',
+                        danger: '#EF4444',
+                        light: 'rgba(255, 255, 255, 0.7)',
+                        dark: 'rgba(15, 23, 42, 0.8)'
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 25%, #f0fdf4 50%, #ecfdf5 75%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-card-active {
+            background: rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-warning {
+            background: rgba(245, 158, 11, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-danger {
+            background: rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        /* 自定义滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <!-- 主容器 -->
+    <div id="app-container" class="pb-16 min-h-screen">
+        <!-- 合并的顶部状态栏和导航栏 -->
+        <header id="top-header" class="glass fixed top-0 left-0 right-0 z-50">
+            <!-- iOS状态栏 -->
+            <div id="ios-status-bar" class="h-7 flex justify-between items-center px-4">
+                <div id="time" class="text-xs font-semibold text-gray-800">9:41</div>
+                <div id="status-icons" class="flex items-center space-x-1">
+                    <i class="fas fa-signal text-xs text-gray-800"></i>
+                    <i class="fas fa-wifi text-xs text-gray-800"></i>
+                    <i class="fas fa-battery-three-quarters text-xs text-gray-800"></i>
+                </div>
+            </div>
+            <!-- 导航栏 -->
+            <div id="top-nav" class="px-4 py-3 flex justify-between items-center">
+                <div id="back-button" class="flex items-center">
+                    <button id="back-btn" class="p-2 rounded-full glass">
+                        <i class="fas fa-arrow-left text-gray-800"></i>
+                    </button>
+                    <h1 id="page-title" class="ml-3 text-lg font-semibold text-gray-800">商品详情</h1>
+                </div>
+                <div id="header-actions" class="flex items-center space-x-3">
+                    <button id="share-btn" class="p-2 rounded-full glass">
+                        <i class="fas fa-share-alt text-gray-800"></i>
+                    </button>
+                    <div id="employee-avatar" class="w-8 h-8 rounded-full overflow-hidden border-2 border-white/30">
+                        <img src="https://i.pinimg.com/736x/41/e0/39/41e0398984b0f1a0c79acfb0694bfcce.jpg" alt="员工头像" class="w-full h-full object-cover">
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main id="main-content" class="pt-24 px-4 pb-24 overflow-y-auto custom-scrollbar">
+            <!-- 商品图片与基本信息区 -->
+            <section id="product-basic-info" class="mb-6">
+                <div id="product-unified-card" class="glass-card rounded-2xl overflow-hidden">
+                    <!-- 商品图片区域 -->
+                    <div id="product-image-container" class="relative h-56">
+                        <img id="product-image" src="https://i.pinimg.com/736x/e4/5d/2e/e45d2e41c17cbe4d1ab93f595fcec3be.jpg" alt="进口牛油果" data-category="食品" class="w-full h-full object-cover">
+                        <div id="product-status-badge" class="absolute top-4 right-4 px-3 py-1 rounded-full bg-accent/90 backdrop-blur-sm border border-white/50 text-xs font-bold text-white shadow-lg">
+                            临期
+                        </div>
+                        <!-- 渐变遮罩，实现图片与信息区的自然过渡 -->
+                        <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white/100 to-transparent"></div>
+                    </div>
+                    
+                    <!-- 商品信息区域 -->
+                    <div id="product-info-section" class="p-5 -mt-8 relative z-10">
+                        <div id="product-header" class="flex justify-between items-start mb-4">
+                            <div id="product-title-container">
+                                <h2 id="product-name" class="text-xl font-bold text-gray-800 mb-1">进口牛油果</h2>
+                                <p id="product-sku" class="text-sm text-gray-600">SKU: AVO-IMP-2023</p>
+                            </div>
+                            <div id="product-price" class="text-right">
+                                <div class="text-lg font-bold text-accent">¥15.90</div>
+                                <span id="original-price" class="text-sm line-through text-gray-500">¥19.90</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 分隔线 -->
+                        <div class="w-full h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-4"></div>
+                        
+                        <div id="product-details" class="grid grid-cols-2 gap-4">
+                            <div id="production-date" class="flex flex-col">
+                                <span class="text-xs text-gray-600 mb-1">生产日期</span>
+                                <span class="text-sm font-medium text-gray-800">2023-06-10</span>
+                            </div>
+                            <div id="entry-date" class="flex flex-col">
+                                <span class="text-xs text-gray-600 mb-1">入库时间</span>
+                                <span class="text-sm font-medium text-gray-800">2023-06-15</span>
+                            </div>
+                            <div id="shelf-life" class="flex flex-col">
+                                <span class="text-xs text-gray-600 mb-1">保质期</span>
+                                <span class="text-sm font-medium text-gray-800">15天</span>
+                            </div>
+                            <div id="location" class="flex flex-col">
+                                <span class="text-xs text-gray-600 mb-1">所在位置</span>
+                                <span class="text-sm font-medium text-gray-800">A区3号货架</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 新鲜度状态与评价 -->
+            <section id="freshness-status" class="mb-6">
+                <h3 id="freshness-title" class="text-lg font-bold text-gray-800 mb-3">新鲜度状态</h3>
+                <div id="freshness-card" class="glass-card-warning p-5 rounded-2xl">
+                    <div id="freshness-header" class="flex justify-between items-center mb-4">
+                        <div id="freshness-score-container" class="flex items-center">
+                            <div id="freshness-score" class="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center mr-4">
+                                <span class="text-2xl font-bold text-accent">78</span>
+                            </div>
+                            <div id="freshness-evaluation">
+                                <h4 id="freshness-status-text" class="text-lg font-semibold text-accent">临期</h4>
+                                <p id="freshness-description" class="text-sm text-gray-600">预计还可保持2天新鲜度</p>
+                            </div>
+                        </div>
+                        <div id="freshness-change" class="text-sm px-2 py-1 rounded-full bg-danger/20 text-danger flex items-center">
+                            <i class="fas fa-arrow-down text-xs mr-1"></i>5%/天
+                        </div>
+                    </div>
+                    
+                    <div id="sensor-readings" class="grid grid-cols-3 gap-3 mb-4">
+                        <div id="temperature" class="glass-card p-3 rounded-xl flex flex-col items-center">
+                            <i class="fas fa-temperature-half text-primary mb-1"></i>
+                            <span id="temperature-value" class="text-lg font-semibold">4.2°C</span>
+                            <span class="text-xs text-gray-600">温度</span>
+                        </div>
+                        <div id="humidity" class="glass-card p-3 rounded-xl flex flex-col items-center">
+                            <i class="fas fa-droplet text-blue-500 mb-1"></i>
+                            <span id="humidity-value" class="text-lg font-semibold">85%</span>
+                            <span class="text-xs text-gray-600">湿度</span>
+                        </div>
+                        <div id="ethylene" class="glass-card p-3 rounded-xl flex flex-col items-center">
+                            <i class="fas fa-wind text-purple-500 mb-1"></i>
+                            <span id="ethylene-value" class="text-lg font-semibold">1.8ppm</span>
+                            <span class="text-xs text-gray-600">乙烯</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 新鲜度历史曲线图 -->
+            <section id="freshness-history" class="mb-6">
+                <h3 id="history-title" class="text-lg font-bold text-gray-800 mb-3">新鲜度历史</h3>
+                <div id="history-card" class="glass-card p-5 rounded-2xl">
+                    <div id="chart-container" class="h-64 mb-3">
+                        <canvas id="freshness-chart"></canvas>
+                    </div>
+                    <div id="chart-legend" class="flex justify-center space-x-6 text-xs">
+                        <div id="legend-freshness" class="flex items-center">
+                            <span class="w-3 h-3 rounded-full bg-primary mr-1"></span>
+                            <span>新鲜度</span>
+                        </div>
+                        <div id="legend-temperature" class="flex items-center">
+                            <span class="w-3 h-3 rounded-full bg-accent mr-1"></span>
+                            <span>温度</span>
+                        </div>
+                        <div id="legend-humidity" class="flex items-center">
+                            <span class="w-3 h-3 rounded-full bg-blue-500 mr-1"></span>
+                            <span>湿度</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 操作按钮 -->
+            <section id="action-buttons" class="mb-6">
+                <div id="buttons-container" class="flex space-x-4">
+                    <button id="modify-status-btn" class="flex-1 py-3 rounded-xl glass-card-active flex items-center justify-center">
+                        <i class="fas fa-edit mr-2 text-primary"></i>
+                        <span class="font-medium text-gray-800">修改状态</span>
+                    </button>
+                    <button id="remove-btn" class="flex-1 py-3 rounded-xl glass-card-danger flex items-center justify-center">
+                        <i class="fas fa-trash-alt mr-2 text-danger"></i>
+                        <span class="font-medium text-gray-800">下架</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 修改状态弹窗 -->
+    <div id="status-modal" class="fixed inset-0 z-50 hidden">
+        <div id="modal-overlay" class="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div id="modal-container" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5/6 max-w-md">
+            <div id="modal-content" class="glass-card p-6 rounded-2xl">
+                <div id="modal-header" class="flex justify-between items-center mb-4">
+                    <h3 id="modal-title" class="text-lg font-bold text-gray-800">修改商品状态</h3>
+                    <button id="close-modal-btn" class="p-1">
+                        <i class="fas fa-times text-gray-600"></i>
+                    </button>
+                </div>
+                <div id="modal-body" class="mb-6">
+                    <div id="status-options" class="space-y-3">
+                        <div id="status-fresh" class="glass-card-active p-3 rounded-xl flex items-center">
+                            <div id="fresh-radio" class="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center mr-3">
+                                <div class="w-3 h-3 rounded-full bg-primary"></div>
+                            </div>
+                            <span class="text-gray-800">新鲜</span>
+                        </div>
+                        <div id="status-expiring" class="glass-card p-3 rounded-xl flex items-center">
+                            <div id="expiring-radio" class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center mr-3">
+                                <div class="w-3 h-3 rounded-full bg-transparent"></div>
+                            </div>
+                            <span class="text-gray-800">临期</span>
+                        </div>
+                        <div id="status-expired" class="glass-card p-3 rounded-xl flex items-center">
+                            <div id="expired-radio" class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center mr-3">
+                                <div class="w-3 h-3 rounded-full bg-transparent"></div>
+                            </div>
+                            <span class="text-gray-800">已过期</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="modal-footer" class="flex space-x-3">
+                    <button id="cancel-status-btn" class="flex-1 py-3 rounded-xl glass-card flex items-center justify-center">
+                        <span class="font-medium text-gray-800">取消</span>
+                    </button>
+                    <button id="confirm-status-btn" class="flex-1 py-3 rounded-xl bg-primary text-white rounded-xl flex items-center justify-center">
+                        <span class="font-medium">确认</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 下架确认弹窗 -->
+    <div id="remove-modal" class="fixed inset-0 z-50 hidden">
+        <div id="remove-overlay" class="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div id="remove-container" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5/6 max-w-md">
+            <div id="remove-content" class="glass-card p-6 rounded-2xl">
+                <div id="remove-header" class="flex justify-between items-center mb-4">
+                    <h3 id="remove-title" class="text-lg font-bold text-gray-800">确认下架</h3>
+                    <button id="close-remove-btn" class="p-1">
+                        <i class="fas fa-times text-gray-600"></i>
+                    </button>
+                </div>
+                <div id="remove-body" class="mb-6">
+                    <p id="remove-message" class="text-gray-700">确定要下架"进口牛油果"吗？下架后该商品将不再显示在商品列表中。</p>
+                </div>
+                <div id="remove-footer" class="flex space-x-3">
+                    <button id="cancel-remove-btn" class="flex-1 py-3 rounded-xl glass-card flex items-center justify-center">
+                        <span class="font-medium text-gray-800">取消</span>
+                    </button>
+                    <button id="confirm-remove-btn" class="flex-1 py-3 rounded-xl bg-danger text-white rounded-xl flex items-center justify-center">
+                        <span class="font-medium">确认下架</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 解析URL参数
+            function getUrlParams() {
+                const params = {};
+                const queryString = window.location.search.substring(1);
+                const urlParams = new URLSearchParams(queryString);
+                
+                for(const [key, value] of urlParams.entries()) {
+                    params[key] = value;
+                }
+                return params;
+            }
+            
+            // 获取URL参数
+            const params = getUrlParams();
+            const productId = params.product_id || 'AVO-IMP-2023'; // 默认值，实际应用中应该根据ID加载数据
+            
+            // 返回按钮点击事件
+            document.querySelector('#back-btn').addEventListener('click', function() {
+                window.history.back();
+            });
+            
+            // 分享按钮点击事件
+            document.querySelector('#share-btn').addEventListener('click', function() {
+                console.log('分享商品信息');
+                alert('分享功能将在实际应用中实现');
+            });
+            
+            // 修改状态按钮点击事件
+            document.querySelector('#modify-status-btn').addEventListener('click', function() {
+                document.querySelector('#status-modal').classList.remove('hidden');
+            });
+            
+            // 下架按钮点击事件
+            document.querySelector('#remove-btn').addEventListener('click', function() {
+                document.querySelector('#remove-modal').classList.remove('hidden');
+            });
+            
+            // 关闭修改状态弹窗
+            document.querySelector('#close-modal-btn').addEventListener('click', function() {
+                document.querySelector('#status-modal').classList.add('hidden');
+            });
+            
+            document.querySelector('#cancel-status-btn').addEventListener('click', function() {
+                document.querySelector('#status-modal').classList.add('hidden');
+            });
+            
+            // 关闭下架确认弹窗
+            document.querySelector('#close-remove-btn').addEventListener('click', function() {
+                document.querySelector('#remove-modal').classList.add('hidden');
+            });
+            
+            document.querySelector('#cancel-remove-btn').addEventListener('click', function() {
+                document.querySelector('#remove-modal').classList.add('hidden');
+            });
+            
+            // 确认修改状态
+            document.querySelector('#confirm-status-btn').addEventListener('click', function() {
+                // 获取选中的状态
+                let selectedStatus = '';
+                if (document.querySelector('#fresh-radio .bg-primary')) {
+                    selectedStatus = '新鲜';
+                } else if (document.querySelector('#expiring-radio .bg-primary')) {
+                    selectedStatus = '临期';
+                } else if (document.querySelector('#expired-radio .bg-primary')) {
+                    selectedStatus = '已过期';
+                }
+                
+                console.log('修改商品状态为:', selectedStatus);
+                alert(`商品状态已修改为: ${selectedStatus}`);
+                document.querySelector('#status-modal').classList.add('hidden');
+                
+                // 在实际应用中，这里应该调用API更新商品状态
+                // 然后刷新页面或更新UI
+            });
+            
+            // 确认下架商品
+            document.querySelector('#confirm-remove-btn').addEventListener('click', function() {
+                console.log('确认下架商品:', productId);
+                alert('商品已下架');
+                document.querySelector('#remove-modal').classList.add('hidden');
+                
+                // 在实际应用中，这里应该调用API下架商品
+                // 然后返回商品列表页
+                setTimeout(() => {
+                    window.location.href = 'P-EMP_PRODUCT_LIST.html';
+                }, 1000);
+            });
+            
+            // 状态选项点击事件
+            document.querySelector('#status-fresh').addEventListener('click', function() {
+                resetStatusOptions();
+                document.querySelector('#fresh-radio div').classList.remove('bg-transparent');
+                document.querySelector('#fresh-radio div').classList.add('bg-primary');
+                document.querySelector('#fresh-radio').classList.remove('border-gray-300');
+                document.querySelector('#fresh-radio').classList.add('border-primary');
+            });
+            
+            document.querySelector('#status-expiring').addEventListener('click', function() {
+                resetStatusOptions();
+                document.querySelector('#expiring-radio div').classList.remove('bg-transparent');
+                document.querySelector('#expiring-radio div').classList.add('bg-primary');
+                document.querySelector('#expiring-radio').classList.remove('border-gray-300');
+                document.querySelector('#expiring-radio').classList.add('border-primary');
+            });
+            
+            document.querySelector('#status-expired').addEventListener('click', function() {
+                resetStatusOptions();
+                document.querySelector('#expired-radio div').classList.remove('bg-transparent');
+                document.querySelector('#expired-radio div').classList.add('bg-primary');
+                document.querySelector('#expired-radio').classList.remove('border-gray-300');
+                document.querySelector('#expired-radio').classList.add('border-primary');
+            });
+            
+            function resetStatusOptions() {
+                // 重置所有选项
+                const radios = ['#fresh-radio', '#expiring-radio', '#expired-radio'];
+                radios.forEach(radio => {
+                    document.querySelector(`${radio} div`).classList.remove('bg-primary');
+                    document.querySelector(`${radio} div`).classList.add('bg-transparent');
+                    document.querySelector(radio).classList.remove('border-primary');
+                    document.querySelector(radio).classList.add('border-gray-300');
+                });
+            }
+            
+            // 初始化新鲜度历史图表
+            const ctx = document.querySelector('#freshness-chart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['6/15', '6/16', '6/17', '6/18', '6/19', '6/20', '6/21', '今天'],
+                    datasets: [
+                        {
+                            label: '新鲜度',
+                            data: [98, 96, 93, 90, 87, 83, 80, 78],
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: '温度 (°C)',
+                            data: [4.0, 4.1, 4.0, 4.2, 4.3, 4.1, 4.2, 4.2],
+                            borderColor: '#F59E0B',
+                            backgroundColor: 'transparent',
+                            tension: 0.3,
+                            borderDash: [5, 5],
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: '湿度 (%)',
+                            data: [88, 87, 86, 86, 85, 85, 85, 85],
+                            borderColor: '#3B82F6',
+                            backgroundColor: 'transparent',
+                            tension: 0.3,
+                            borderDash: [5, 5],
+                            yAxisID: 'y2'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 70,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '新鲜度'
+                            }
+                        },
+                        y1: {
+                            beginAtZero: false,
+                            min: 0,
+                            max: 10,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            title: {
+                                display: true,
+                                text: '温度 (°C)'
+                            }
+                        },
+                        y2: {
+                            beginAtZero: false,
+                            min: 70,
+                            max: 100,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            title: {
+                                display: false,
+                                text: '湿度 (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

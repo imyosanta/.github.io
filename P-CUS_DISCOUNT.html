@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshGuard - 个性化优惠</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#059669',
+                        accent: '#F59E0B',
+                        success: '#34D399',
+                        warning: '#FBBF24',
+                        danger: '#EF4444',
+                        light: 'rgba(255, 255, 255, 0.7)',
+                        dark: 'rgba(15, 23, 42, 0.8)'
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 25%, #f0fdf4 50%, #ecfdf5 75%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-card-active {
+            background: rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-warning {
+            background: rgba(245, 158, 11, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-danger {
+            background: rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        
+        /* 隐藏分类标签滚动条 */
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        
+        .tabs-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .tabs-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* 分类标签容器渐变遮罩 */
+        .tabs-container-wrapper {
+            position: relative;
+        }
+        
+        .tabs-container-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 20px;
+            height: 100%;
+            background: linear-gradient(to left, rgba(255, 255, 255, 0.8), transparent);
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .tabs-container-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.8), transparent);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* 自定义滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+        }
+
+        /* 价格标签样式 */
+        .price-tag {
+            position: relative;
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: rgba(239, 68, 68, 0.9);
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .price-tag::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -4px;
+            margin-top: -4px;
+            border-width: 4px 0 4px 4px;
+            border-style: solid;
+            border-color: transparent transparent transparent rgba(239, 68, 68, 0.9);
+        }
+
+        .original-price {
+            text-decoration: line-through;
+            color: #9CA3AF;
+        }
+
+        /* 订阅标签样式 */
+        .subscription-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #059669;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+    <!-- 主容器 -->
+    <div id="app-container" class="pb-16 min-h-screen">
+        <!-- 合并的顶部栏 -->
+        <header id="top-header" class="glass fixed top-0 left-0 right-0 z-50 px-4 py-3">
+            <!-- iOS状态栏 -->
+            <div id="ios-status-bar" class="h-7 flex justify-between items-center px-4">
+                <div id="time" class="text-xs font-semibold text-gray-800">9:41</div>
+                <div id="status-icons" class="flex items-center space-x-1">
+                    <i class="fas fa-signal text-xs text-gray-800"></i>
+                    <i class="fas fa-wifi text-xs text-gray-800"></i>
+                    <i class="fas fa-battery-three-quarters text-xs text-gray-800"></i>
+                </div>
+            </div>
+            <!-- 导航栏 -->
+            <div id="top-nav" class="py-3 flex justify-between items-center">
+                <div class="w-10 h-10"></div>
+                <h1 id="page-title" class="text-lg font-bold text-gray-800">个性化优惠</h1>
+                <div id="header-actions" class="w-10 h-10 rounded-full glass flex items-center justify-center">
+                    <i class="fas fa-bell text-gray-800"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main id="main-content" class="pt-28 px-4 pb-24 overflow-y-auto custom-scrollbar">
+            <!-- 分类标签 -->
+            <section id="category-tabs" class="mb-6">
+                <div class="tabs-container-wrapper">
+                    <div id="tabs-container" class="flex space-x-2 overflow-x-auto py-2 tabs-scrollbar">
+                    <button id="tab-all" class="px-4 py-2 rounded-full bg-primary text-white text-sm font-medium whitespace-nowrap">全部优惠</button>
+                    <button id="tab-fruits" class="px-4 py-2 rounded-full bg-white/50 text-gray-700 text-sm font-medium whitespace-nowrap">水果</button>
+                    <button id="tab-vegetables" class="px-4 py-2 rounded-full bg-white/50 text-gray-700 text-sm font-medium whitespace-nowrap">蔬菜</button>
+                    <button id="tab-meat" class="px-4 py-2 rounded-full bg-white/50 text-gray-700 text-sm font-medium whitespace-nowrap">肉类</button>
+                    <button id="tab-seafood" class="px-4 py-2 rounded-full bg-white/50 text-gray-700 text-sm font-medium whitespace-nowrap">海鲜</button>
+                    <button id="tab-dairy" class="px-4 py-2 rounded-full bg-white/50 text-gray-700 text-sm font-medium whitespace-nowrap">乳制品</button>
+                </div>
+                </div>
+            </section>
+
+            <!-- 临期降价商品列表 -->
+            <section id="discount-products" class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="discount-title" class="text-lg font-bold text-gray-800">临期降价</h2>
+                    <span id="discount-count" class="text-sm text-gray-600">共24件商品</span>
+                </div>
+                
+                <div id="discount-list" class="grid grid-cols-2 gap-4">
+                    <!-- 临期降价商品1 -->
+                    <div id="discount-item-1" class="glass-card p-3 rounded-2xl">
+                        <div class="relative mb-2">
+                            <img src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6" alt="草莓" data-category="水果" class="w-full h-32 object-cover rounded-xl">
+                            <span class="text-xs px-2 py-0.5 bg-danger/90 text-white rounded-full absolute -top-1 -right-1">7折</span>
+                            <div class="absolute bottom-2 left-2 bg-warning/80 text-white text-xs px-2 py-1 rounded-full">
+                                <i class="fas fa-clock mr-1"></i>今日到期
+                            </div>
+                        </div>
+                        <h3 id="discount-item-1-name" class="text-sm font-semibold text-gray-800 mb-1">有机草莓</h3>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <span id="discount-item-1-price" class="text-sm font-bold text-danger mr-2">¥15.8</span>
+                                <span id="discount-item-1-original" class="text-xs original-price">¥22.5</span>
+                            </div>
+                            <span id="discount-item-1-freshness" class="text-xs px-2 py-0.5 bg-warning/20 text-warning rounded-full">临期</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 临期降价商品2 -->
+                    <div id="discount-item-2" class="glass-card p-3 rounded-2xl">
+                        <div class="relative mb-2">
+                            <img src="https://i.pinimg.com/736x/e4/5d/2e/e45d2e41c17cbe4d1ab93f595fcec3be.jpg" alt="牛油果" data-category="水果" class="w-full h-32 object-cover rounded-xl">
+                            <span class="text-xs px-2 py-0.5 bg-danger/90 text-white rounded-full absolute -top-1 -right-1">8折</span>
+                            <div class="absolute bottom-2 left-2 bg-warning/80 text-white text-xs px-2 py-1 rounded-full">
+                                <i class="fas fa-clock mr-1"></i>明日到期
+                            </div>
+                        </div>
+                        <h3 id="discount-item-2-name" class="text-sm font-semibold text-gray-800 mb-1">进口牛油果</h3>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <span id="discount-item-2-price" class="text-sm font-bold text-danger mr-2">¥12.8</span>
+                                <span id="discount-item-2-original" class="text-xs original-price">¥16.0</span>
+                            </div>
+                            <span id="discount-item-2-freshness" class="text-xs px-2 py-0.5 bg-warning/20 text-warning rounded-full">临期</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 临期降价商品3 -->
+                    <div id="discount-item-3" class="glass-card p-3 rounded-2xl">
+                        <div class="relative mb-2">
+                            <img src="https://images.unsplash.com/photo-1603048297172-c92544798d5a" alt="牛肉" data-category="肉类" class="w-full h-32 object-cover rounded-xl">
+                            <span class="text-xs px-2 py-0.5 bg-danger/90 text-white rounded-full absolute -top-1 -right-1">6折</span>
+                            <div class="absolute bottom-2 left-2 bg-warning/80 text-white text-xs px-2 py-1 rounded-full">
+                                <i class="fas fa-clock mr-1"></i>今日到期
+                            </div>
+                        </div>
+                        <h3 id="discount-item-3-name" class="text-sm font-semibold text-gray-800 mb-1">澳洲牛肉</h3>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <span id="discount-item-3-price" class="text-sm font-bold text-danger mr-2">¥45.6</span>
+                                <span id="discount-item-3-original" class="text-xs original-price">¥76.0</span>
+                            </div>
+                            <span id="discount-item-3-freshness" class="text-xs px-2 py-0.5 bg-warning/20 text-warning rounded-full">临期</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 临期降价商品4 -->
+                    <div id="discount-item-4" class="glass-card p-3 rounded-2xl">
+                        <div class="relative mb-2">
+                            <img src="https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2" alt="三文鱼" data-category="海鲜" class="w-full h-32 object-cover rounded-xl">
+                            <span class="text-xs px-2 py-0.5 bg-danger/90 text-white rounded-full absolute -top-1 -right-1">7.5折</span>
+                            <div class="absolute bottom-2 left-2 bg-warning/80 text-white text-xs px-2 py-1 rounded-full">
+                                <i class="fas fa-clock mr-1"></i>明日到期
+                            </div>
+                        </div>
+                        <h3 id="discount-item-4-name" class="text-sm font-semibold text-gray-800 mb-1">挪威三文鱼</h3>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <span id="discount-item-4-price" class="text-sm font-bold text-danger mr-2">¥52.5</span>
+                                <span id="discount-item-4-original" class="text-xs original-price">¥70.0</span>
+                            </div>
+                            <span id="discount-item-4-freshness" class="text-xs px-2 py-0.5 bg-warning/20 text-warning rounded-full">临期</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 查看更多按钮 -->
+                <div id="view-more-container" class="mt-4 text-center">
+                    <button id="view-more-btn" class="px-6 py-2 rounded-full bg-white/50 text-gray-700 text-sm font-medium">
+                        查看更多 <i class="fas fa-chevron-down ml-1"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 我的订阅区域 -->
+            <section id="my-subscriptions" class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="subscriptions-title" class="text-lg font-bold text-gray-800">我的订阅</h2>
+                    <button id="add-subscription-btn" class="text-sm text-primary flex items-center">
+                        <i class="fas fa-plus mr-1"></i> 订阅优惠
+                    </button>
+                </div>
+                
+                <div id="subscriptions-list" class="space-y-3">
+                    <!-- 订阅项1 -->
+                    <div id="subscription-item-1" class="glass-card p-4 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mr-3">
+                                    <i class="fas fa-apple-alt text-primary"></i>
+                                </div>
+                                <div>
+                                    <h3 id="subscription-item-1-name" class="text-sm font-semibold text-gray-800">水果类</h3>
+                                    <p id="subscription-item-1-desc" class="text-xs text-gray-600">接收所有水果类优惠通知</p>
+                                </div>
+                            </div>
+                            <button id="unsubscribe-btn-1" class="text-xs text-gray-500">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 订阅项2 -->
+                    <div id="subscription-item-2" class="glass-card p-4 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center mr-3">
+                                    <i class="fas fa-fish text-accent"></i>
+                                </div>
+                                <div>
+                                    <h3 id="subscription-item-2-name" class="text-sm font-semibold text-gray-800">海鲜类</h3>
+                                    <p id="subscription-item-2-desc" class="text-xs text-gray-600">接收所有海鲜类优惠通知</p>
+                                </div>
+                            </div>
+                            <button id="unsubscribe-btn-2" class="text-xs text-gray-500">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 订阅项3 -->
+                    <div id="subscription-item-3" class="glass-card p-4 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center mr-3">
+                                    <img src="https://images.unsplash.com/photo-1464965911861-746a04b4bca6" alt="草莓" class="w-6 h-6 object-cover rounded-full">
+                                </div>
+                                <div>
+                                    <h3 id="subscription-item-3-name" class="text-sm font-semibold text-gray-800">有机草莓</h3>
+                                    <p id="subscription-item-3-desc" class="text-xs text-gray-600">接收特定商品优惠通知</p>
+                                </div>
+                            </div>
+                            <button id="unsubscribe-btn-3" class="text-xs text-gray-500">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 推荐优惠 -->
+            <section id="recommended-discounts">
+                <h2 id="recommended-title" class="text-lg font-bold text-gray-800 mb-4">为您推荐</h2>
+                
+                <div id="recommended-list" class="space-y-3">
+                    <!-- 推荐优惠1 -->
+                    <div id="recommended-item-1" class="glass-card p-3 rounded-2xl">
+                        <div class="flex">
+                            <img src="https://images.unsplash.com/photo-1563636619-e9143da7973b" alt="牛奶" data-category="乳制品" class="w-20 h-20 object-cover rounded-xl mr-3">
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <h3 id="recommended-item-1-name" class="text-sm font-semibold text-gray-800">有机纯牛奶</h3>
+                                    <span class="subscription-tag">
+                                        <i class="fas fa-bell-slash text-xs mr-1"></i>未订阅
+                                    </span>
+                                </div>
+                                <p id="recommended-item-1-desc" class="text-xs text-gray-600 mb-2">常有优惠，建议订阅</p>
+                                <button id="subscribe-btn-1" class="text-xs bg-primary/20 text-primary px-3 py-1 rounded-full">
+                                    <i class="fas fa-plus text-xs mr-1"></i>订阅
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 推荐优惠2 -->
+                    <div id="recommended-item-2" class="glass-card p-3 rounded-2xl">
+                        <div class="flex">
+                            <img src="https://images.unsplash.com/photo-1540420773420-3366772f4999" alt="蔬菜" data-category="蔬菜" class="w-20 h-20 object-cover rounded-xl mr-3">
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <h3 id="recommended-item-2-name" class="text-sm font-semibold text-gray-800">蔬菜类</h3>
+                                    <span class="subscription-tag">
+                                        <i class="fas fa-bell-slash text-xs mr-1"></i>未订阅
+                                    </span>
+                                </div>
+                                <p id="recommended-item-2-desc" class="text-xs text-gray-600 mb-2">根据您的购买习惯推荐</p>
+                                <button id="subscribe-btn-2" class="text-xs bg-primary/20 text-primary px-3 py-1 rounded-full">
+                                    <i class="fas fa-plus text-xs mr-1"></i>订阅
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部导航栏 -->
+        <nav id="bottom-nav" class="fixed bottom-4 left-4 right-4 z-40">
+            <div class="glass rounded-full shadow-glass px-0.5 py-0.5 flex justify-center items-center max-w-[280px] mx-auto space-x-1">
+                <a id="nav-overview" href="P-CUS_PRODUCT_OVERVIEW.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-home text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-shopping-list" href="P-CUS_SHOPPING_LIST.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-shopping-cart text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-discount" href="P-CUS_DISCOUNT.html" class="flex items-center justify-center p-3">
+                    <div class="w-12 h-12 rounded-xl bg-primary/30 flex items-center justify-center">
+                        <i class="fas fa-tag text-primary text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-user" href="P-CUS_USER_CENTER.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-user text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- 订阅优惠弹窗 -->
+    <div id="subscription-modal" class="fixed inset-0 z-50 hidden">
+        <div id="modal-overlay" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+        <div id="modal-container" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md">
+            <div id="modal-content" class="glass-card p-5 rounded-3xl">
+                <div id="modal-header" class="flex justify-between items-center mb-4">
+                    <h3 id="modal-title" class="text-lg font-bold text-gray-800">订阅优惠</h3>
+                    <button id="modal-close" class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center">
+                        <i class="fas fa-times text-gray-700"></i>
+                    </button>
+                </div>
+                
+                <div id="modal-body" class="mb-5">
+                    <p id="modal-description" class="text-sm text-gray-700 mb-4">选择您想要订阅的商品类别或特定商品，当有优惠时我们会通知您。</p>
+                    
+                    <div id="subscription-options" class="space-y-3">
+                        <div id="category-options" class="space-y-2">
+                            <h4 id="category-title" class="text-sm font-semibold text-gray-800">商品分类</h4>
+                            <div id="category-grid" class="grid grid-cols-3 gap-2">
+                                <button id="category-fruits" class="p-2 rounded-xl bg-white/30 text-xs text-gray-700">水果</button>
+                                <button id="category-vegetables" class="p-2 rounded-xl bg-white/30 text-xs text-gray-700">蔬菜</button>
+                                <button id="category-meat" class="p-2 rounded-xl bg-white/30 text-xs text-gray-700">肉类</button>
+                                <button id="category-seafood" class="p-2 rounded-xl bg-white/30 text-xs text-gray-700">海鲜</button>
+                                <button id="category-dairy" class="p-2 rounded-xl bg-white/30 text-xs text-gray-700">乳制品</button>
+                                <button id="category-all" class="p-2 rounded-xl bg-white/30 text-xs text-gray-700">全部</button>
+                            </div>
+                        </div>
+                        
+                        <div id="product-search" class="space-y-2">
+                            <h4 id="product-search-title" class="text-sm font-semibold text-gray-800">特定商品</h4>
+                            <div id="search-container" class="relative">
+                                <input id="product-search-input" type="text" placeholder="搜索商品名称" class="w-full px-4 py-2 pl-10 rounded-xl bg-white/30 text-sm text-gray-700 focus:outline-none">
+                                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="modal-footer" class="flex space-x-3">
+                    <button id="modal-cancel" class="flex-1 py-2 rounded-xl bg-white/30 text-gray-700 text-sm font-medium">取消</button>
+                    <button id="modal-confirm" class="flex-1 py-2 rounded-xl bg-primary text-white text-sm font-medium">确认订阅</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 分类标签点击事件
+            const tabs = document.querySelectorAll('#category-tabs button');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 重置所有标签样式
+                    tabs.forEach(t => {
+                        t.classList.remove('bg-primary', 'text-white');
+                        t.classList.add('bg-white/50', 'text-gray-700');
+                    });
+                    
+                    // 设置当前标签样式
+                    this.classList.remove('bg-white/50', 'text-gray-700');
+                    this.classList.add('bg-primary', 'text-white');
+                    
+                    // 这里可以添加筛选商品的逻辑
+                    console.log('筛选分类:', this.textContent);
+                });
+            });
+            
+            // 临期降价商品点击事件
+            const discountItems = document.querySelectorAll('#discount-list > div');
+            discountItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const productId = this.id.split('-').pop(); // 获取商品ID
+                    window.location.href = `P-CUS_PRODUCT_DETAIL.html?productId=${productId}`;
+                });
+            });
+            
+            // 查看更多按钮点击事件
+            document.querySelector('#view-more-btn').addEventListener('click', function() {
+                console.log('加载更多临期降价商品');
+                // 这里可以添加加载更多商品的逻辑
+            });
+            
+            // 订阅优惠按钮点击事件
+            document.querySelector('#add-subscription-btn').addEventListener('click', function() {
+                document.querySelector('#subscription-modal').classList.remove('hidden');
+            });
+            
+            // 取消订阅按钮点击事件
+            const unsubscribeBtns = document.querySelectorAll('[id^="unsubscribe-btn-"]');
+            unsubscribeBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // 阻止事件冒泡
+                    const subscriptionId = this.id.split('-').pop();
+                    console.log('取消订阅:', subscriptionId);
+                    // 这里可以添加取消订阅的逻辑
+                    
+                    // 显示取消成功提示
+                    alert('已取消订阅');
+                });
+            });
+            
+            // 推荐订阅按钮点击事件
+            const subscribeBtns = document.querySelectorAll('[id^="subscribe-btn-"]');
+            subscribeBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // 阻止事件冒泡
+                    const recommendedId = this.id.split('-').pop();
+                    console.log('订阅推荐:', recommendedId);
+                    // 这里可以添加订阅推荐的逻辑
+                    
+                    // 显示订阅成功提示
+                    alert('订阅成功');
+                });
+            });
+            
+            // 弹窗关闭按钮点击事件
+            document.querySelector('#modal-close').addEventListener('click', function() {
+                document.querySelector('#subscription-modal').classList.add('hidden');
+            });
+            
+            // 弹窗取消按钮点击事件
+            document.querySelector('#modal-cancel').addEventListener('click', function() {
+                document.querySelector('#subscription-modal').classList.add('hidden');
+            });
+            
+            // 弹窗确认按钮点击事件
+            document.querySelector('#modal-confirm').addEventListener('click', function() {
+                console.log('确认订阅');
+                // 这里可以添加确认订阅的逻辑
+                
+                // 关闭弹窗
+                document.querySelector('#subscription-modal').classList.add('hidden');
+                
+                // 显示订阅成功提示
+                alert('订阅成功');
+            });
+            
+            // 弹窗背景点击事件
+            document.querySelector('#modal-overlay').addEventListener('click', function() {
+                document.querySelector('#subscription-modal').classList.add('hidden');
+            });
+            
+            // 分类选择按钮点击事件
+            const categoryBtns = document.querySelectorAll('#category-grid button');
+            categoryBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 切换选中状态
+                    this.classList.toggle('bg-primary');
+                    this.classList.toggle('text-white');
+                    this.classList.toggle('bg-white/30');
+                    this.classList.toggle('text-gray-700');
+                });
+            });
+            
+            // 底部导航栏点击事件
+            document.querySelector('#nav-overview').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-CUS_PRODUCT_OVERVIEW.html';
+            });
+            
+            document.querySelector('#nav-shopping-list').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-CUS_SHOPPING_LIST.html';
+            });
+            
+            document.querySelector('#nav-discount').addEventListener('click', function(e) {
+                e.preventDefault();
+                // 已在优惠页面，无需操作
+            });
+            
+            document.querySelector('#nav-user').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-CUS_USER_CENTER.html';
+            });
+        });
+    </script>
+</body>
+</html>

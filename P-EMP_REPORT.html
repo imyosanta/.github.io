@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshGuard - 数据分析报告</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#059669',
+                        accent: '#F59E0B',
+                        success: '#34D399',
+                        warning: '#FBBF24',
+                        danger: '#EF4444',
+                        light: 'rgba(255, 255, 255, 0.7)',
+                        dark: 'rgba(15, 23, 42, 0.8)'
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 25%, #f0fdf4 50%, #ecfdf5 75%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-card-active {
+            background: rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-warning {
+            background: rgba(245, 158, 11, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .glass-card-danger {
+            background: rgba(239, 68, 68, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* iOS状态栏样式 */
+        .ios-status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        /* 自定义滚动条 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+        }
+        
+        /* 报告类型选择器样式 */
+        .report-type-selector {
+            display: flex;
+            overflow-x: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        .report-type-selector::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+        
+        .report-type-item {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        
+        /* 日期选择器样式 */
+        .date-picker {
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* 图表容器样式 */
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen">
+     <!-- 主容器 -->
+    <div id="app-container" class="pb-16 min-h-screen">
+        <!-- 合并的顶部区域 (状态栏 + 导航栏) -->
+        <header id="top-header" class="glass fixed top-0 left-0 right-0 z-50 px-4 py-3">
+            <!-- iOS状态栏 -->
+            <div id="ios-status-bar" class="h-7 flex justify-between items-center px-4">
+                <div id="time" class="text-xs font-semibold text-gray-800">9:41</div>
+                <div id="status-icons" class="flex items-center space-x-1">
+                    <i class="fas fa-signal text-xs text-gray-800"></i>
+                    <i class="fas fa-wifi text-xs text-gray-800"></i>
+                    <i class="fas fa-battery-three-quarters text-xs text-gray-800"></i>
+                </div>
+            </div>
+            <!-- 导航栏 -->
+            <div id="top-nav" class=" py-3 flex justify-between items-center">
+            <div id="user-profile" class="glass-card p-3 rounded-2xl cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105">
+                <div class="flex items-center">
+                    <div id="user-avatar" class="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white/50">
+                        <img src="https://i.pinimg.com/736x/41/e0/39/41e0398984b0f1a0c79acfb0694bfcce.jpg" alt="用户头像" data-category="人物" class="w-full h-full object-cover">
+                    </div>
+                    <div id="user-info" class="ml-3">
+                        <h2 id="user-name" class="text-sm font-semibold text-gray-800">李明</h2>
+                        <p id="user-role" class="text-xs text-gray-600">生鲜部理货员</p>
+                    </div>
+                    <div class="ml-2">
+                        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+            <div id="header-actions" class="flex items-center space-x-3">
+                <button id="notification-btn" class="relative p-2 rounded-full glass">
+                    <i class="fas fa-bell text-gray-800"></i>
+                    <span id="notification-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full flex items-center justify-center text-[10px] text-white font-bold">3</span>
+                </button>
+                <button id="settings-btn" class="p-2 rounded-full glass">
+                    <i class="fas fa-cog text-gray-800"></i>
+                </button>
+            </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main id="main-content" class="pt-40 px-4 pb-24 overflow-y-auto custom-scrollbar">
+            <!-- 页面标题 -->
+            <section id="page-title" class="mb-6">
+                <h1 id="title" class="text-2xl font-bold text-gray-800">数据分析报告</h1>
+                <p id="subtitle" class="text-sm text-gray-600">查看生鲜商品运营数据和趋势分析</p>
+            </section>
+            
+            <!-- 报告类型选择器 -->
+            <section id="report-type-selector" class="mb-6">
+                <div class="report-type-selector pb-2">
+                    <button id="daily-report-btn" class="report-type-item px-4 py-2 mr-2 rounded-full glass-card-active text-sm font-medium">
+                        日报
+                    </button>
+                    <button id="weekly-report-btn" class="report-type-item px-4 py-2 mr-2 rounded-full glass text-sm font-medium">
+                        周报
+                    </button>
+                    <button id="monthly-report-btn" class="report-type-item px-4 py-2 mr-2 rounded-full glass text-sm font-medium">
+                        月报
+                    </button>
+                    <button id="custom-report-btn" class="report-type-item px-4 py-2 rounded-full glass text-sm font-medium">
+                        自定义
+                    </button>
+                </div>
+            </section>
+            
+            <!-- 时间范围选择器 (默认隐藏，自定义报告时显示) -->
+            <section id="date-range-selector" class="mb-6 hidden">
+                <div class="flex space-x-2">
+                    <div class="flex-1">
+                        <label for="start-date" class="block text-xs text-gray-600 mb-1">开始日期</label>
+                        <input type="date" id="start-date" class="w-full px-3 py-2 rounded-lg date-picker text-sm" value="2023-06-01">
+                    </div>
+                    <div class="flex-1">
+                        <label for="end-date" class="block text-xs text-gray-600 mb-1">结束日期</label>
+                        <input type="date" id="end-date" class="w-full px-3 py-2 rounded-lg date-picker text-sm" value="2023-06-30">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="generate-custom-report-btn" class="px-4 py-2 bg-primary text-white rounded-lg text-sm">
+                            生成
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 报告概览 -->
+            <section id="report-overview" class="mb-6">
+                <div class="glass-card p-4">
+                    <h2 id="report-date" class="text-lg font-semibold text-gray-800 mb-3">2023年6月15日 报告</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div id="total-loss-card" class="p-3 rounded-lg bg-white/30">
+                            <p class="text-xs text-gray-600 mb-1">总损耗金额</p>
+                            <p class="text-xl font-bold text-gray-800">¥1,245.60</p>
+                            <div class="flex items-center mt-1">
+                                <span class="text-xs text-danger flex items-center">
+                                    <i class="fas fa-arrow-up text-[10px] mr-1"></i>5.2%
+                                </span>
+                                <span class="text-xs text-gray-500 ml-1">较昨日</span>
+                            </div>
+                        </div>
+                        <div id="avg-loss-rate-card" class="p-3 rounded-lg bg-white/30">
+                            <p class="text-xs text-gray-600 mb-1">平均损耗率</p>
+                            <p class="text-xl font-bold text-gray-800">3.8%</p>
+                            <div class="flex items-center mt-1">
+                                <span class="text-xs text-success flex items-center">
+                                    <i class="fas fa-arrow-down text-[10px] mr-1"></i>0.5%
+                                </span>
+                                <span class="text-xs text-gray-500 ml-1">较昨日</span>
+                            </div>
+                        </div>
+                        <div id="inventory-turnover-card" class="p-3 rounded-lg bg-white/30">
+                            <p class="text-xs text-gray-600 mb-1">库存周转天数</p>
+                            <p class="text-xl font-bold text-gray-800">2.3天</p>
+                            <div class="flex items-center mt-1">
+                                <span class="text-xs text-success flex items-center">
+                                    <i class="fas fa-arrow-down text-[10px] mr-1"></i>0.2天
+                                </span>
+                                <span class="text-xs text-gray-500 ml-1">较昨日</span>
+                            </div>
+                        </div>
+                        <div id="expired-items-card" class="p-3 rounded-lg bg-white/30">
+                            <p class="text-xs text-gray-600 mb-1">过期商品数</p>
+                            <p class="text-xl font-bold text-gray-800">18件</p>
+                            <div class="flex items-center mt-1">
+                                <span class="text-xs text-danger flex items-center">
+                                    <i class="fas fa-arrow-up text-[10px] mr-1"></i>2件
+                                </span>
+                                <span class="text-xs text-gray-500 ml-1">较昨日</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 损耗率趋势图 -->
+            <section id="loss-rate-trend" class="mb-6">
+                <div class="glass-card p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">损耗率趋势</h2>
+                        <div class="flex items-center">
+                            <button id="loss-rate-day-btn" class="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary mr-1">日</button>
+                            <button id="loss-rate-week-btn" class="text-xs px-2 py-1 rounded-full text-gray-600 mr-1">周</button>
+                            <button id="loss-rate-month-btn" class="text-xs px-2 py-1 rounded-full text-gray-600">月</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="loss-rate-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 品类损耗分析 -->
+            <section id="category-loss-analysis" class="mb-6">
+                <div class="glass-card p-4">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">品类损耗分析</h2>
+                    <div class="chart-container">
+                        <canvas id="category-loss-chart"></canvas>
+                    </div>
+                    <div class="mt-4 space-y-3">
+                        <div id="fruit-loss" class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-primary mr-2"></div>
+                                <span class="text-sm">水果</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium">¥485.30</span>
+                                <span class="text-xs text-gray-600 ml-2">(39%)</span>
+                            </div>
+                        </div>
+                        <div id="vegetable-loss" class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-accent mr-2"></div>
+                                <span class="text-sm">蔬菜</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium">¥325.60</span>
+                                <span class="text-xs text-gray-600 ml-2">(26%)</span>
+                            </div>
+                        </div>
+                        <div id="meat-loss" class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-danger mr-2"></div>
+                                <span class="text-sm">肉类</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium">¥245.20</span>
+                                <span class="text-xs text-gray-600 ml-2">(20%)</span>
+                            </div>
+                        </div>
+                        <div id="seafood-loss" class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full bg-secondary mr-2"></div>
+                                <span class="text-sm">海鲜</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium">¥189.50</span>
+                                <span class="text-xs text-gray-600 ml-2">(15%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 库存周转分析 -->
+            <section id="inventory-turnover-analysis" class="mb-6">
+                <div class="glass-card p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">库存周转分析</h2>
+                        <div class="flex items-center">
+                            <button id="turnover-day-btn" class="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary mr-1">日</button>
+                            <button id="turnover-week-btn" class="text-xs px-2 py-1 rounded-full text-gray-600 mr-1">周</button>
+                            <button id="turnover-month-btn" class="text-xs px-2 py-1 rounded-full text-gray-600">月</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="inventory-turnover-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 数据导出 -->
+            <section id="data-export" class="mb-6">
+                <div class="glass-card p-4 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-800">导出报告</h2>
+                        <p class="text-xs text-gray-600">将当前报告导出为Excel或PDF格式</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="export-excel-btn" class="px-4 py-2 bg-success/20 text-success rounded-lg text-sm flex items-center">
+                            <i class="fas fa-file-excel mr-1"></i>
+                            Excel
+                        </button>
+                        <button id="export-pdf-btn" class="px-4 py-2 bg-danger/20 text-danger rounded-lg text-sm flex items-center">
+                            <i class="fas fa-file-pdf mr-1"></i>
+                            PDF
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部导航栏 -->
+        <nav id="bottom-nav" class="fixed bottom-4 left-4 right-4 z-40">
+            <div class="glass rounded-full shadow-glass px-0.5 py-0.5 flex justify-center items-center max-w-[280px] mx-auto space-x-1">
+                <a id="nav-dashboard" href="P-EMP_DASHBOARD.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-home text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-products" href="P-EMP_PRODUCT_LIST.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-box text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-map" href="P-EMP_MAP.html" class="flex items-center justify-center p-3">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fas fa-map-marker-alt text-gray-800 text-lg"></i>
+                    </div>
+                </a>
+                
+                <a id="nav-reports" href="P-EMP_REPORT.html" class="flex items-center justify-center p-3">
+                    <div class="w-12 h-12 rounded-xl bg-primary/30 flex items-center justify-center">
+                        <i class="fas fa-chart-bar text-primary text-lg"></i>
+                    </div>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置当前时间
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            document.querySelector('#time').textContent = `${hours}:${minutes}`;
+            
+            // 报告类型选择器
+            const reportTypeButtons = [
+                document.querySelector('#daily-report-btn'),
+                document.querySelector('#weekly-report-btn'),
+                document.querySelector('#monthly-report-btn'),
+                document.querySelector('#custom-report-btn')
+            ];
+            
+            reportTypeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // 重置所有按钮样式
+                    reportTypeButtons.forEach(btn => {
+                        btn.classList.remove('glass-card-active');
+                        btn.classList.add('glass');
+                    });
+                    
+                    // 设置当前按钮样式
+                    this.classList.remove('glass');
+                    this.classList.add('glass-card-active');
+                    
+                    // 显示/隐藏自定义日期选择器
+                    const dateRangeSelector = document.querySelector('#date-range-selector');
+                    if (this.id === 'custom-report-btn') {
+                        dateRangeSelector.classList.remove('hidden');
+                    } else {
+                        dateRangeSelector.classList.add('hidden');
+                        
+                        // 更新报告标题
+                        let reportTitle = '';
+                        if (this.id === 'daily-report-btn') {
+                            reportTitle = '2023年6月15日 报告';
+                        } else if (this.id === 'weekly-report-btn') {
+                            reportTitle = '2023年第24周 报告 (6月12日-6月18日)';
+                        } else if (this.id === 'monthly-report-btn') {
+                            reportTitle = '2023年6月 报告';
+                        }
+                        document.querySelector('#report-date').textContent = reportTitle;
+                        
+                        // 更新图表数据
+                        updateCharts(this.id);
+                    }
+                });
+            });
+            
+            // 自定义报告生成按钮
+            document.querySelector('#generate-custom-report-btn').addEventListener('click', function() {
+                const startDate = document.querySelector('#start-date').value;
+                const endDate = document.querySelector('#end-date').value;
+                
+                // 格式化日期显示
+                const formattedStartDate = formatDate(startDate);
+                const formattedEndDate = formatDate(endDate);
+                
+                // 更新报告标题
+                document.querySelector('#report-date').textContent = `${formattedStartDate} - ${formattedEndDate} 报告`;
+                
+                // 更新图表数据
+                updateCharts('custom-report-btn', { startDate, endDate });
+            });
+            
+            // 损耗率趋势图时间范围按钮
+            const lossRateTimeButtons = [
+                document.querySelector('#loss-rate-day-btn'),
+                document.querySelector('#loss-rate-week-btn'),
+                document.querySelector('#loss-rate-month-btn')
+            ];
+            
+            lossRateTimeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // 重置所有按钮样式
+                    lossRateTimeButtons.forEach(btn => {
+                        btn.classList.remove('bg-primary/20', 'text-primary');
+                        btn.classList.add('text-gray-600');
+                    });
+                    
+                    // 设置当前按钮样式
+                    this.classList.remove('text-gray-600');
+                    this.classList.add('bg-primary/20', 'text-primary');
+                    
+                    // 更新损耗率趋势图
+                    updateLossRateChart(this.id);
+                });
+            });
+            
+            // 库存周转分析时间范围按钮
+            const turnoverTimeButtons = [
+                document.querySelector('#turnover-day-btn'),
+                document.querySelector('#turnover-week-btn'),
+                document.querySelector('#turnover-month-btn')
+            ];
+            
+            turnoverTimeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // 重置所有按钮样式
+                    turnoverTimeButtons.forEach(btn => {
+                        btn.classList.remove('bg-primary/20', 'text-primary');
+                        btn.classList.add('text-gray-600');
+                    });
+                    
+                    // 设置当前按钮样式
+                    this.classList.remove('text-gray-600');
+                    this.classList.add('bg-primary/20', 'text-primary');
+                    
+                    // 更新库存周转分析图
+                    updateInventoryTurnoverChart(this.id);
+                });
+            });
+            
+            // 导出按钮
+            document.querySelector('#export-excel-btn').addEventListener('click', function() {
+                console.log('导出Excel报告');
+                alert('报告已导出为Excel格式');
+            });
+            
+            document.querySelector('#export-pdf-btn').addEventListener('click', function() {
+                console.log('导出PDF报告');
+                alert('报告已导出为PDF格式');
+            });
+            
+            // 底部导航栏
+            document.querySelector('#nav-dashboard').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_DASHBOARD.html';
+            });
+            
+            document.querySelector('#nav-products').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_PRODUCT_LIST.html';
+            });
+            
+            document.querySelector('#nav-map').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = 'P-EMP_MAP.html';
+            });
+            
+            document.querySelector('#nav-reports').addEventListener('click', function(e) {
+                e.preventDefault();
+                // 已在报告页面，无需操作
+            });
+            
+            // 初始化图表
+            initCharts();
+            
+            // 辅助函数：格式化日期
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+            }
+            
+            // 初始化图表
+            function initCharts() {
+                // 损耗率趋势图
+                const lossRateCtx = document.querySelector('#loss-rate-chart').getContext('2d');
+                window.lossRateChart = new Chart(lossRateCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['6/9', '6/10', '6/11', '6/12', '6/13', '6/14', '6/15'],
+                        datasets: [{
+                            label: '损耗率 (%)',
+                            data: [4.2, 3.9, 4.1, 3.7, 3.5, 3.9, 3.8],
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // 品类损耗分析图
+                const categoryLossCtx = document.querySelector('#category-loss-chart').getContext('2d');
+                window.categoryLossChart = new Chart(categoryLossCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['水果', '蔬菜', '肉类', '海鲜'],
+                        datasets: [{
+                            data: [39, 26, 20, 15],
+                            backgroundColor: [
+                                '#10B981',
+                                '#F59E0B',
+                                '#EF4444',
+                                '#059669'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        cutout: '70%'
+                    }
+                });
+                
+                // 库存周转分析图
+                const inventoryTurnoverCtx = document.querySelector('#inventory-turnover-chart').getContext('2d');
+                window.inventoryTurnoverChart = new Chart(inventoryTurnoverCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['6/9', '6/10', '6/11', '6/12', '6/13', '6/14', '6/15'],
+                        datasets: [{
+                            label: '库存周转天数',
+                            data: [2.7, 2.6, 2.5, 2.4, 2.5, 2.4, 2.3],
+                            backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '天';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 更新图表数据
+            function updateCharts(reportType, customDates) {
+                // 根据报告类型更新图表数据
+                if (reportType === 'daily-report-btn') {
+                    // 日报数据
+                    updateLossRateChart('loss-rate-day-btn');
+                    updateInventoryTurnoverChart('turnover-day-btn');
+                } else if (reportType === 'weekly-report-btn') {
+                    // 周报数据
+                    window.lossRateChart.data.labels = ['第18周', '第19周', '第20周', '第21周', '第22周', '第23周', '第24周'];
+                    window.lossRateChart.data.datasets[0].data = [4.5, 4.3, 4.0, 3.8, 3.7, 3.9, 3.8];
+                    window.lossRateChart.update();
+                    
+                    window.inventoryTurnoverChart.data.labels = ['第18周', '第19周', '第20周', '第21周', '第22周', '第23周', '第24周'];
+                    window.inventoryTurnoverChart.data.datasets[0].data = [3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.3];
+                    window.inventoryTurnoverChart.update();
+                } else if (reportType === 'monthly-report-btn') {
+                    // 月报数据
+                    window.lossRateChart.data.labels = ['1月', '2月', '3月', '4月', '5月', '6月'];
+                    window.lossRateChart.data.datasets[0].data = [5.2, 4.9, 4.7, 4.3, 4.0, 3.8];
+                    window.lossRateChart.update();
+                    
+                    window.inventoryTurnoverChart.data.labels = ['1月', '2月', '3月', '4月', '5月', '6月'];
+                    window.inventoryTurnoverChart.data.datasets[0].data = [3.5, 3.3, 3.1, 2.9, 2.6, 2.3];
+                    window.inventoryTurnoverChart.update();
+                } else if (reportType === 'custom-report-btn' && customDates) {
+                    // 自定义报告数据 - 这里简化处理，实际应根据日期范围生成数据
+                    const daysDiff = Math.round((new Date(customDates.endDate) - new Date(customDates.startDate)) / (1000 * 60 * 60 * 24));
+                    
+                    if (daysDiff <= 7) {
+                        // 短期自定义报告
+                        const labels = [];
+                        const lossRateData = [];
+                        const turnoverData = [];
+                        
+                        for (let i = 0; i <= daysDiff; i++) {
+                            const date = new Date(customDates.startDate);
+                            date.setDate(date.getDate() + i);
+                            labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
+                            
+                            // 生成随机数据
+                            lossRateData.push((3.5 + Math.random() * 1).toFixed(1));
+                            turnoverData.push((2.2 + Math.random() * 0.8).toFixed(1));
+                        }
+                        
+                        window.lossRateChart.data.labels = labels;
+                        window.lossRateChart.data.datasets[0].data = lossRateData;
+                        window.lossRateChart.update();
+                        
+                        window.inventoryTurnoverChart.data.labels = labels;
+                        window.inventoryTurnoverChart.data.datasets[0].data = turnoverData;
+                        window.inventoryTurnoverChart.update();
+                    } else {
+                        // 长期自定义报告
+                        const labels = [];
+                        const lossRateData = [];
+                        const turnoverData = [];
+                        
+                        // 简化处理，每7天一个数据点
+                        const weeks = Math.ceil(daysDiff / 7);
+                        for (let i = 0; i < weeks; i++) {
+                            const date = new Date(customDates.startDate);
+                            date.setDate(date.getDate() + i * 7);
+                            labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
+                            
+                            // 生成随机数据
+                            lossRateData.push((3.5 + Math.random() * 1).toFixed(1));
+                            turnoverData.push((2.2 + Math.random() * 0.8).toFixed(1));
+                        }
+                        
+                        window.lossRateChart.data.labels = labels;
+                        window.lossRateChart.data.datasets[0].data = lossRateData;
+                        window.lossRateChart.update();
+                        
+                        window.inventoryTurnoverChart.data.labels = labels;
+                        window.inventoryTurnoverChart.data.datasets[0].data = turnoverData;
+                        window.inventoryTurnoverChart.update();
+                    }
+                }
+            }
+            
+            // 更新损耗率趋势图
+            function updateLossRateChart(timeRangeId) {
+                if (timeRangeId === 'loss-rate-day-btn') {
+                    // 日视图
+                    window.lossRateChart.data.labels = ['6/9', '6/10', '6/11', '6/12', '6/13', '6/14', '6/15'];
+                    window.lossRateChart.data.datasets[0].data = [4.2, 3.9, 4.1, 3.7, 3.5, 3.9, 3.8];
+                } else if (timeRangeId === 'loss-rate-week-btn') {
+                    // 周视图
+                    window.lossRateChart.data.labels = ['第18周', '第19周', '第20周', '第21周', '第22周', '第23周', '第24周'];
+                    window.lossRateChart.data.datasets[0].data = [4.5, 4.3, 4.0, 3.8, 3.7, 3.9, 3.8];
+                } else if (timeRangeId === 'loss-rate-month-btn') {
+                    // 月视图
+                    window.lossRateChart.data.labels = ['1月', '2月', '3月', '4月', '5月', '6月'];
+                    window.lossRateChart.data.datasets[0].data = [5.2, 4.9, 4.7, 4.3, 4.0, 3.8];
+                }
+                
+                window.lossRateChart.update();
+            }
+            
+            // 更新库存周转分析图
+            function updateInventoryTurnoverChart(timeRangeId) {
+                if (timeRangeId === 'turnover-day-btn') {
+                    // 日视图
+                    window.inventoryTurnoverChart.data.labels = ['6/9', '6/10', '6/11', '6/12', '6/13', '6/14', '6/15'];
+                    window.inventoryTurnoverChart.data.datasets[0].data = [2.7, 2.6, 2.5, 2.4, 2.5, 2.4, 2.3];
+                } else if (timeRangeId === 'turnover-week-btn') {
+                    // 周视图
+                    window.inventoryTurnoverChart.data.labels = ['第18周', '第19周', '第20周', '第21周', '第22周', '第23周', '第24周'];
+                    window.inventoryTurnoverChart.data.datasets[0].data = [3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.3];
+                } else if (timeRangeId === 'turnover-month-btn') {
+                    // 月视图
+                    window.inventoryTurnoverChart.data.labels = ['1月', '2月', '3月', '4月', '5月', '6月'];
+                    window.inventoryTurnoverChart.data.datasets[0].data = [3.5, 3.3, 3.1, 2.9, 2.6, 2.3];
+                }
+                
+                window.inventoryTurnoverChart.update();
+            }
+        });
+    </script>
+</body>
+</html>
